@@ -1,0 +1,34 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Users/ngohu/AppData/Local/Arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino"
+            ],
+            "browse": {
+                "path": [
+                    "C:/Users/ngohu/Documents/Arduino/libraries",
+                    "C:/Users/ngohu/AppData/Local/Arduino15/packages",
+                    "C:/Users/ngohu/AppData/Local/Arduino15/libraries",
+                    "C:/Users/ngohu/AppData/Local/Arduino15/staging/libraries",
+                    "C:/Users/ngohu/AppData/Local/Arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino",
+                    "C:/Users/ngohu/AppData/Local/Arduino15/packages/arduino/hardware/avr/1.8.6/libraries",
+                    "${workspaceRoot}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "F_CPU=16000000L",
+                "ARDUINO=10805",
+                "ARDUINO_AVR_UNO",
+                "ARDUINO_ARCH_AVR"
+            ]
+        }
+    ],
+    "version": 4
+}
