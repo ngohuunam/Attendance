@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#line 1 "E:\\Code\\Attendance\\Arduino\\gm861-test-swserial\\gm861-test-swserial.ino"
 #include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 
@@ -88,3 +90,4 @@ void Gm861Send(uint32_t type, uint32_t address, uint32_t data) {
 
   swSerial.write(buffer, 9);
 }
+
