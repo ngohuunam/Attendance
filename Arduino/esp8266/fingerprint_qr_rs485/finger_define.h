@@ -1,12 +1,13 @@
-#include "define_swserial.h"
+#include "library_define.h"
 #include "define.h"
 
-Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
-
-String fingerID = "";
+#define FINGER_CHECK_AVAILABLE_INTERVAL 5000
 
 enum eFingerWork {
-  START_READ = 0,
+  CHECK_AVAILABLE = 0,
+  PRINT_INFO,
+  WAIT,
+  START_READ,
   READING,
   MATCHED,
   START_ENROLL,
@@ -17,7 +18,7 @@ enum eFingerWork {
   NOT_AVAILABLE
 };
 
-enum eFingerReadResponse {
+enum eFingerResponse {
   NO_FINGER_DETECTED,
   IMAGE_TAKEN,
   COMMUNICATION_ERROR,
@@ -30,7 +31,7 @@ enum eFingerReadResponse {
   DID_NOT_FIND_A_MATCH,
 };
 
-enum eFingerReadProcess {
+enum eFingerProcess {
   GET_IMAGE,
   IMAGE_2_TZ,
   FINGER_SEARCH,
@@ -38,18 +39,25 @@ enum eFingerReadProcess {
 };
 
 typedef struct {
-  tHardwareStatus *STATUS;
-  enum eFingerReadResponse READ_RESPONSE;
-  enum eFingerReadProcess READ_PROCESS;
+  //  tHardwareStatus *STATUS;
+  byte OK = 254;
+  String STATUS = "Start up";
+  String DATA = "";
+  uint16_t MATCHED_ID;
+  uint16_t MATCHED_CONFIDENCE;
+  uint8_t CODE;
   enum eFingerWork WORK;
+  enum eFingerResponse RESPONSE;
+  enum eFingerProcess PROCESS;
+  void (*WORK_FUNC)();
 } tFingerStatus;
 
 typedef struct {
-  tTimerID *ID;
+  tTimerID ID;
   uint8_t retry;
 } tFingerTimer;
 
-tFingerTimer *FingerTimer = nullptr;
-tFingerStatus *FingerStatus = nullptr;
+tFingerTimer FingerTimer;
+tFingerStatus FingerStatus;
 
 #define FINGER_TIMER_MS 11

@@ -1,9 +1,14 @@
+#include <AsyncTimer.h>
+
+AsyncTimer t;
+
 #include <Adafruit_Fingerprint.h>
 
 #define FINGER_RX 0
 #define FINGER_TX 2
 
 SoftwareSerial fingerSerial(FINGER_RX, FINGER_TX);
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
 
 #define QR_RX 14
 #define QR_TX 12
