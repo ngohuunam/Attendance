@@ -148,17 +148,16 @@ void fingerCheckIsAvailable() {
     FingerStatus.OK = finger.verifyPassword();
     switch (FingerStatus.OK) {
       case HW_STATUS_OK:
-        t.cancel(FingerTimer.ID.RUNNING);
-        t.cancel(FingerTimer.ID.CHECK);
-        FingerTimer.ID.RUNNING = t.setInterval(FingerStatus.WORK_FUNC, FINGER_TIMER_MS);
+        t.cancel(FingerTimer.RUNNING);
+        FingerTimer.RUNNING = t.setInterval(FingerStatus.WORK_FUNC, FINGER_TIMER_MS);
         Serial.println("Finger Available");
         break;
 
       case HW_STATUS_NOT_OK:
         Serial.println("Finger not Available");
         FingerStatus.WORK = NOT_AVAILABLE;
-        t.cancel(FingerTimer.ID.RUNNING);
-        //        FingerTimer.ID.CHECK = t.setTimeout(fingerCheckIsAvailable, FINGER_CHECK_AVAILABLE_INTERVAL);
+        t.cancel(FingerTimer.RUNNING);
+        //        FingerTimer.CHECK = t.setTimeout(fingerCheckIsAvailable, FINGER_CHECK_AVAILABLE_INTERVAL);
         break;
     }
     tick = FINGER;
@@ -182,7 +181,7 @@ void fingerHandleMatchedImage() {
 void fingerHandleError() {
   String str = "";
   str = "Finger has Error - code: " + String(FingerStatus.CODE)
-        + "  - work: " + String(FingerStatus.WORK)
+        + " - work: " + String(FingerStatus.WORK)
         + " - process: " + String(FingerStatus.PROCESS)
         + " - reponse: " + String(FingerStatus.RESPONSE);
   Serial.println(str);
@@ -328,34 +327,30 @@ void fingerWait() {
 
 void fingerPrintInfo() {
 
-  if (FingerStatus.OK) {
-    Serial.println("Found fingerprint sensor!");
+  Serial.println("Found fingerprint sensor!");
 
-    Serial.println("Reading sensor parameters");
-    finger.getParameters();
-    Serial.print(F("Status: 0x")); Serial.println(finger.status_reg, HEX);
-    Serial.print(F("Sys ID: 0x")); Serial.println(finger.system_id, HEX);
-    Serial.print(F("Capacity: ")); Serial.println(finger.capacity);
-    Serial.print(F("Security level: ")); Serial.println(finger.security_level);
-    Serial.print(F("Device address: ")); Serial.println(finger.device_addr, HEX);
-    Serial.print(F("Packet len: ")); Serial.println(finger.packet_len);
-    Serial.print(F("Baud rate: ")); Serial.println(finger.baud_rate);
+  Serial.println("Reading sensor parameters");
+  finger.getParameters();
+  Serial.print(F("Status: 0x")); Serial.println(finger.status_reg, HEX);
+  Serial.print(F("Sys ID: 0x")); Serial.println(finger.system_id, HEX);
+  Serial.print(F("Capacity: ")); Serial.println(finger.capacity);
+  Serial.print(F("Security level: ")); Serial.println(finger.security_level);
+  Serial.print(F("Device address: ")); Serial.println(finger.device_addr, HEX);
+  Serial.print(F("Packet len: ")); Serial.println(finger.packet_len);
+  Serial.print(F("Baud rate: ")); Serial.println(finger.baud_rate);
 
-    finger.getTemplateCount();
+  finger.getTemplateCount();
 
-    if (finger.templateCount == 0) {
-      Serial.print("Sensor doesn't contain any fingerprint data. Please run the 'enroll' example.");
-    }
-    else {
-      Serial.println("Waiting for valid finger...");
-      Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
-    }
-
-    FingerStatus.WORK = START_READ;
-    tick = FINGER;
-  } else {
-    Serial.println("Did not find fingerprint sensor :(");
+  if (finger.templateCount == 0) {
+    Serial.print("Sensor doesn't contain any fingerprint data. Please run the 'enroll' example.");
   }
+  else {
+    Serial.println("Waiting for valid finger...");
+    Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
+  }
+
+  FingerStatus.WORK = START_READ;
+  tick = FINGER;
 }
 
 void (* fingerWorkFunctions [12])() = {
@@ -371,9 +366,12 @@ void (* fingerWorkFunctions [12])() = {
 };
 
 void fingerAssignWorkFunction(enum eFingerWork _work) {
-  t.cancel(FingerTimer.ID.RUNNING);
+  t.cancel(FingerTimer.RUNNING);
   FingerStatus.WORK_FUNC = fingerWorkFunctions[_work];
-  FingerTimer.ID.RUNNING = t.setInterval(FingerStatus.WORK_FUNC, FINGER_TIMER_MS);
+  FingerStatus.OK = finger.verifyPassword();
+  if (FingerStatus.OK == HW_STATUS_OK) {
+    FingerTimer.RUNNING = t.setInterval(FingerStatus.WORK_FUNC, FINGER_TIMER_MS);
+  }
 }
 
 void fingerUpdateWorkFunction() {

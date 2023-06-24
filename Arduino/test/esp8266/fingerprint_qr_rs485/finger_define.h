@@ -52,12 +52,7 @@ typedef struct {
   void (*WORK_FUNC)();
 } tFingerStatus;
 
-typedef struct {
-  tTimerID ID;
-  uint8_t retry;
-} tFingerTimer;
-
-tFingerTimer FingerTimer;
+tTimerID FingerTimer;
 tFingerStatus FingerStatus;
 
 #define FINGER_TIMER_MS 11

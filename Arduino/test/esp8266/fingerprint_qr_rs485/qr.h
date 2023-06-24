@@ -1,5 +1,6 @@
+#include "rs485.h"
 
-#define QR_BUFFER_LENGTH 9
+//#define SERIAL_BUFFER_LENGTH 9
 #define QR_HEARTBEAT_INTERVAL 5000
 #define QR_TIMER_MS 10
 
@@ -11,34 +12,37 @@ enum eQrWork {
   QR_WORK_RESTORE_USER_SETTING,
   QR_WORK_NORMAL_SETTING,
   QR_WORK_GET_CODE,
+  QR_WORK_WAITING_FOR_RESONSE,
   QR_WORK_ERR,
   QR_WORK_NOT_AVAILABLE
 };
 
-typedef struct {
-  char READ_DATA[QR_BUFFER_LENGTH];
+struct tQrState {
+  char READ_DATA[SERIAL_BUFFER_LENGTH];
   uint8_t HEARTBEAT = 0;
   enum eQrWork WORK = QR_WORK_READING;
   void (*WORK_FUNC)();
-} tQrState;
+} QrState;
 
-tQrState QrState;
+//void qrSend(uint32_t _type, uint32_t _address, uint32_t _data, uint32_t _check1, uint32_t _check2) {
+//  hwSend(&qr, 0x7E, _type, _address, _data, _check1, _check2)();
+//}
 
-void qrSend(uint32_t type, uint32_t address, uint32_t data, uint32_t check1, uint32_t check2) {
-  uint8_t qrBuffer[QR_BUFFER_LENGTH];
-
-  qrBuffer[0] = 0x7E;
-  qrBuffer[1] = 0;
-  qrBuffer[2] = type;
-  qrBuffer[3] = 1;
-  qrBuffer[4] = 0;
-  qrBuffer[5] = address;
-  qrBuffer[6] = data;
-  qrBuffer[7] = check1;
-  qrBuffer[8] = check2;
-
-  qr.write(qrBuffer, QR_BUFFER_LENGTH);
-}
+//void qrSend(uint32_t type, uint32_t address, uint32_t data, uint32_t check1, uint32_t check2) {
+//  uint8_t qrBuffer[SERIAL_BUFFER_LENGTH];
+//
+//  qrBuffer[0] = 0x7E;
+//  qrBuffer[1] = 0;
+//  qrBuffer[2] = type;
+//  qrBuffer[3] = 1;
+//  qrBuffer[4] = 0;
+//  qrBuffer[5] = address;
+//  qrBuffer[6] = data;
+//  qrBuffer[7] = check1;
+//  qrBuffer[8] = check2;
+//
+//  qr.write(qrBuffer, SERIAL_BUFFER_LENGTH);
+//}
 
 void qrHeartbeat(void) {
   // Headr Ty Ln Addrs Data  Check   Headr Ty Ln Data  Check
@@ -81,7 +85,7 @@ void qrInput(void) {
       if (qr.available()) {
         timeout = millis();
         QrState.READ_DATA[byte_counter++] = qr.read();
-        if (byte_counter >= QR_BUFFER_LENGTH - 1) {
+        if (byte_counter >= SERIAL_BUFFER_LENGTH - 1) {
           break;
         }
       }
@@ -102,11 +106,14 @@ void qrInput(void) {
 
 void qrHandleCode(void) {
   Serial.print("QR get code: "); Serial.println(QrState.READ_DATA);
-  QrState.WORK = QR_WORK_READING;
-  tick = QR;
+//  rs485.write(QrState.READ_DATA);
+  QrState.WORK = QR_WORK_WAITING_FOR_RESONSE;
+  Rs485State.WORK = RS485_WORK_SEND_CODE;
+  Rs485State.SEND_DATA = QrState.READ_DATA;
+  tick = RS485_QR;
 }
 
-void (* qrWorkFunctions [7])() = {
+void (* qrWorkFunctions [8])() = {
   qrInput,
   qrTrigger,
   qrRestoreUserSetting,
