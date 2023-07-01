@@ -12,8 +12,8 @@ AsyncTimer t;
 
 #define SERIAL_BUFFER_LENGTH 9
 
-#define FINGER_RX 15
-#define FINGER_TX 13
+#define FINGER_RX 14
+#define FINGER_TX 12
 
 SoftwareSerial fingerSerial(FINGER_RX, FINGER_TX);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
@@ -23,8 +23,8 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
 
 SoftwareSerial qr(QR_RX, QR_TX);
 
-#define RS485_RX 14
-#define RS485_TX 12
+#define RS485_RX 15
+#define RS485_TX 13
 
 SoftwareSerial rs485(RS485_RX, RS485_TX);
 

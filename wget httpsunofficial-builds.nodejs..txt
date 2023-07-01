@@ -1,0 +1,13 @@
+wget https://unofficial-builds.nodejs.org/download/release/v20.3.1/node-v20.3.1-linux-armv6l.tar.xz
+
+tar xvfJ node-v20.3.1-linux-armv6l.tar.xz
+
+sudo cp -rf node-v20.3.1-linux-armv6l/* /usr/local
+
+sudo npm install johnny-five raspi-io serialport --unsafe-perm
+
+pm2 start bin/www.js --name endpoint --watch --ignore-watch "node_modules, dbjson" --log "log" --time
+
+pm2 start ecosystem.config.js
+
+pm2 delete ecosystem.config.js

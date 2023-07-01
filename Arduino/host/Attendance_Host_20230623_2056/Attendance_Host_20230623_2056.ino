@@ -1,21 +1,10 @@
-/*
-    This sketch trys to Connect to the best AP based on a given list
 
-*/
+#include <WiFi.h>
+#include "driver/adc.h"
 
-//#include "Arduino.h"
-//#include <Wire.h>  // Only needed for Arduino 1.6.5 and earlier
 #include "SSD1306Wire.h"
 
 SSD1306Wire display(0x3c, SDA_OLED, SCL_OLED);
-
-#include <WiFi.h>
-#include <WiFiMulti.h>
-
-WiFiMulti wifiMulti;
-
-String wifiIp = "";
-String wifiStatus = "Start up...";
 
 #include <AsyncTimer.h>
 
@@ -24,36 +13,174 @@ AsyncTimer t;
 typedef struct {
   unsigned short RASP_PING = 0;
   unsigned short RASP_PING_CHECK_RESPONSE = 0;
+  unsigned short RASP_INPUT = 0;
+  unsigned short RS485_1_INPUT = 0;
+  unsigned short RS485_2_INPUT = 0;
+  unsigned short RS485_3_INPUT = 0;
+  unsigned short RS485_4_INPUT = 0;
+  unsigned short OLED_DRAW = 0;
+
 } tTimerID;
 
 tTimerID TimerID;
 
+#define INPUT_TIMER_INTERVAL 10
+
 #include <SoftwareSerial.h>
 
-#define RS485_RX 41
-#define RS485_TX 42
+#define RS485_RX_1 7  //18
+#define RS485_TX_1 6  //17
 
-EspSoftwareSerial::UART rs485Serial(RS485_RX, RS485_TX);
+EspSoftwareSerial::UART rs485_1_Serial(RS485_RX_1, RS485_TX_1);
+
+#define RS485_RX_2 5  //16
+#define RS485_TX_2 4  //15
+
+EspSoftwareSerial::UART rs485_2_Serial(RS485_RX_2, RS485_TX_2);
+
+#define RS485_RX_3 39  //10
+#define RS485_TX_3 40  //9
+
+EspSoftwareSerial::UART rs485_3_Serial(RS485_RX_3, RS485_TX_3);
+
+#define RS485_RX_4 41  //8
+#define RS485_TX_4 42  //7
+
+EspSoftwareSerial::UART rs485_4_Serial(RS485_RX_4, RS485_TX_4);
 
 #define RASP_RX 19
 #define RASP_TX 20
 
 EspSoftwareSerial::UART raspSerial(RASP_RX, RASP_TX);
 
-String RS485_RECEIVED = "";
-uint32_t RS485_HEARTBEAT_COUNTER = 0;
+typedef struct {
+  String _1 = "";
+  String _2 = "";
+  String _3 = "";
+  String _4 = "";
+} tRs485InputStr;
 
-#define PING_RASP_DURATION 2000
-#define PING_RASP_CHECK_RESPONSE_DURATION 5000
+tRs485InputStr RS485_INPUT_STR;
 
-uint32_t raspSendCount = 0;
-uint32_t raspInputCount = 0;
+#define PING_RASP_DURATION 5000
+#define PING_RASP_CHECK_RESPONSE_DURATION 20000
 
 String SEND_COUNT_STR = "";
-String INPUT_COUNT_STR = "";
+String RASP_PING_STATUS = "";
 String READ_DATA_STR = "";
 
 uint32_t raspPingCount = 0;
+
+void disableWiFi();
+
+void setup()
+{
+  disableWiFi();
+  pinMode(RST_OLED, OUTPUT);
+  digitalWrite(RST_OLED, LOW);
+  delay(20);
+  digitalWrite(RST_OLED, HIGH);
+  display.setFont(ArialMT_Plain_10);
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+
+  display.init();
+  //  display.flipScreenVertically();
+  display.clear();
+  display.drawString(0, 0, "START UP...");
+  display.display();
+
+  //  Serial.begin(115200);
+  delay(10);
+
+  pinMode(RS485_RX_1, INPUT);
+  pinMode(RS485_TX_1, OUTPUT);
+
+  pinMode(RS485_RX_2, INPUT);
+  pinMode(RS485_TX_2, OUTPUT);
+
+  pinMode(RS485_RX_3, INPUT);
+  pinMode(RS485_TX_3, OUTPUT);
+
+  pinMode(RS485_RX_4, INPUT);
+  pinMode(RS485_TX_4, OUTPUT);
+
+  rs485_1_Serial.begin(9600);
+  rs485_2_Serial.begin(9600);
+  rs485_3_Serial.begin(9600);
+  rs485_4_Serial.begin(9600);
+
+  pinMode(RASP_RX, INPUT);
+  pinMode(RASP_TX, OUTPUT);
+
+  raspSerial.begin(9600);
+
+  TimerID.RS485_1_INPUT = t.setInterval(rs485_1_Input, INPUT_TIMER_INTERVAL);
+  TimerID.RS485_2_INPUT = t.setInterval(rs485_2_Input, INPUT_TIMER_INTERVAL);
+  TimerID.RS485_3_INPUT = t.setInterval(rs485_3_Input, INPUT_TIMER_INTERVAL);
+  TimerID.RS485_4_INPUT = t.setInterval(rs485_4_Input, INPUT_TIMER_INTERVAL);
+  TimerID.RASP_INPUT = t.setInterval(raspInput, INPUT_TIMER_INTERVAL);
+  TimerID.RASP_PING = t.setInterval(pingRasp, PING_RASP_DURATION);
+  TimerID.OLED_DRAW = t.setInterval(oledDraw, 1000);
+  //  t.setInterval(raspSend, DEMO_DURATION);
+  display.clear();
+  display.drawString(0, 0, "DONE SETUP...");
+  display.display();
+}
+
+void oledDraw() {
+  display.clear();
+  display.drawString(0, 0, "RS485 1: " + RS485_INPUT_STR._1);
+  display.drawString(0, 10, "RS485 2: " + RS485_INPUT_STR._2);
+  display.drawString(0, 20, "RS485 3: " + RS485_INPUT_STR._3);
+  display.drawString(0, 30, SEND_COUNT_STR);
+  display.drawString(0, 40, RASP_PING_STATUS);
+  display.drawString(0, 50, READ_DATA_STR);
+  display.display();
+}
+
+void loop()
+{
+  t.handle();
+}
+
+void rs485Forwarder() {
+  rs485_1_Input();
+  rs485_2_Input();
+  rs485_3_Input();
+  rs485_4_Input();
+}
+
+void rs485_1_Input() {
+  if (rs485_1_Serial.available() > 0) {
+    delay(10);
+    RS485_INPUT_STR._1 = rs485_1_Serial.readString();
+    raspSerial.println(RS485_INPUT_STR._1);
+  }
+}
+
+void rs485_2_Input() {
+  if (rs485_2_Serial.available() > 0) {
+    delay(10);
+    RS485_INPUT_STR._2 = rs485_2_Serial.readString();
+    raspSerial.println(RS485_INPUT_STR._2);
+  }
+}
+
+void rs485_3_Input() {
+  if (rs485_3_Serial.available() > 0) {
+    delay(10);
+    RS485_INPUT_STR._3 = rs485_3_Serial.readString();
+    raspSerial.println(RS485_INPUT_STR._3);
+  }
+}
+
+void rs485_4_Input() {
+  if (rs485_4_Serial.available() > 0) {
+    delay(10);
+    RS485_INPUT_STR._4 = rs485_4_Serial.readString();
+    raspSerial.println(RS485_INPUT_STR._4);
+  }
+}
 
 
 // string: string to parse
@@ -61,9 +188,9 @@ uint32_t raspPingCount = 0;
 // returns number of items parsed
 void split(String* _resStrArr, String _string, char _delim, int _len)
 {
-  int r = 0, t = 0;
+  int r = 0, t = 0, i = 0;
 
-  for (int i = 0; i < _len; i++)
+  for (i = 0; i < _len; i++)
   {
     if (_string.charAt(i) == _delim)
     {
@@ -72,6 +199,7 @@ void split(String* _resStrArr, String _string, char _delim, int _len)
       t++;
     }
   }
+  _resStrArr[t] = _string.substring(r, i);
 }
 
 void pingRasp(void) {
@@ -86,21 +214,14 @@ byte pingRaspNotResponseCount = 0;
 
 void handdlePingRaspNotReponse() {
   pingRaspNotResponseCount++;
+  RASP_PING_STATUS = "Ping Rasp FAILED";
 }
-
-//void raspSend(void) {
-//  raspSendCount++;
-//  SEND_COUNT_STR = "RASP SEND: " + String(raspSendCount);
-//  raspSerial.println(SEND_COUNT_STR);
-//}
 
 void raspInput(void) {
   if (raspSerial.available() > 0) {
-    raspInputCount++;
     delay(10);
     String READ_DATA = raspSerial.readString();
     READ_DATA_STR = READ_DATA;
-    INPUT_COUNT_STR = "RASP INPUT COUNT: " + String(raspInputCount);
     handleRaspInputStr(READ_DATA);
   }
 }
@@ -112,95 +233,20 @@ void handleRaspInputStr(String _str) {
   String _device = _strArr[0];
   String _cmd = _strArr[1];
   String _value = _strArr[2];
+  String _pingStr = "_device: " + _device + ", _cmd: " + _cmd + ", _value: " + _value;
+  raspSerial.println(_pingStr);
   if (_device == "h") {
     if (_cmd == "p") {
       if (_value == String(raspPingCount + 1)) {
         t.cancel(TimerID.RASP_PING_CHECK_RESPONSE);
+        RASP_PING_STATUS = "Ping Rasp OK";
       }
     }
   }
 }
 
-void setup()
-{
-  Serial.begin(115200);
-  delay(10);
-
-  pinMode(RS485_RX, INPUT);
-  pinMode(RS485_TX, OUTPUT);
-
-  rs485Serial.begin(9600);
-
-  pinMode(RASP_RX, INPUT);
-  pinMode(RASP_TX, OUTPUT);
-
-  raspSerial.begin(9600);
-
-  pinMode(RST_OLED, OUTPUT);
-  digitalWrite(RST_OLED, LOW);
-  delay(20);
-  digitalWrite(RST_OLED, HIGH);
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-
-  display.init();
-  //  display.flipScreenVertically();
-  drawWifiInfo();
-
-  wifiMulti.addAP("Ti Teo", "12345678");
-  wifiMulti.addAP("MDFKG", "hoianhtuan");
-
-  Serial.println("Connecting Wifi...");
-  wifiStatus = "Connecting Wifi...";
-  if (wifiMulti.run() == WL_CONNECTED) {
-    wifiIp = String(WiFi.localIP().toString());
-    wifiStatus = "Wifi connected";
-    Serial.println("");
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(wifiIp);
-  }
-  t.setInterval(drawWifiInfo, 1000);
-  t.setInterval(rs485Input, 10);
-  t.setInterval(raspInput, 10);
-  TimerID.RASP_PING = t.setInterval(pingRasp, PING_RASP_DURATION);
-  //  t.setInterval(raspSend, DEMO_DURATION);
-}
-
-void drawWifiInfo() {
-  display.clear();
-  display.drawString(0, 0, wifiStatus);
-  //  display.drawString(0, 10, "IP address: ");
-  display.drawString(0, 10, wifiIp);
-  display.drawString(0, 20, RS485_RECEIVED);
-  display.drawString(0, 30, SEND_COUNT_STR);
-  display.drawString(0, 40, INPUT_COUNT_STR);
-  display.drawString(0, 50, READ_DATA_STR);
-  display.display();
-}
-
-void loop()
-{
-  if (wifiMulti.run() != WL_CONNECTED) {
-    Serial.println("WiFi not connected!");
-    wifiStatus = "WiFi not connected!";
-    delay(1000);
-  }
-  t.handle();
-}
-
-void rs485Input() {
-  if (rs485Serial.available() > 0) {
-    delay(10);
-    RS485_RECEIVED = rs485Serial.readString();
-    Serial.print("RS485_RECEIVED: "); Serial.println(RS485_RECEIVED);
-    if (RS485_RECEIVED == "heartbeat") {
-      rs485Serial.print("heartbeat");
-      RS485_HEARTBEAT_COUNTER++;
-      RS485_RECEIVED += ": ";
-      RS485_RECEIVED += String(RS485_HEARTBEAT_COUNTER);
-      Serial.print("RS485_RECEIVED > 0: "); Serial.println(RS485_RECEIVED);
-      drawWifiInfo();
-    }
-  }
+void disableWiFi() {
+  adc_power_off();
+  WiFi.disconnect(true);  // Disconnect from the network
+  WiFi.mode(WIFI_OFF);    // Switch WiFi off
 }
