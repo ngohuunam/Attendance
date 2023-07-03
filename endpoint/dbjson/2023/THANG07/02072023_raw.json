@@ -1,0 +1,29 @@
+{
+  "rasp": [
+    "Startup: 17:33:51",
+    "Startup: 17:41:56",
+    "Startup: 17:48:29",
+    "Startup: 17:53:10",
+    "Startup: 18:27:26",
+    "Startup: 18:52:43",
+    "Startup: 18:53:05"
+  ],
+  "host": [
+    "Connect timeout: 17:42:36",
+    "Connect timeout: 17:49:09",
+    "Connect timeout: 17:53:50",
+    "Connect timeout: 18:53:45"
+  ],
+  "reader_1": [
+    "Connect timeout: 17:42:36",
+    "Connect timeout: 17:49:09",
+    "Connect timeout: 17:53:50",
+    "Connect timeout: 18:53:45"
+  ],
+  "reader_2": [
+    "Connect timeout: 17:42:36",
+    "Connect timeout: 17:49:09",
+    "Connect timeout: 17:53:50",
+    "Connect timeout: 18:53:45"
+  ]
+}

@@ -153,7 +153,7 @@ void rs485Forwarder() {
 void rs485_1_Input() {
   if (rs485_1_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._1 = rs485_1_Serial.readString();
+    RS485_INPUT_STR._1 = rs485_1_Serial.readStringUntil("\n");
     raspSerial.println(RS485_INPUT_STR._1);
   }
 }
@@ -161,7 +161,7 @@ void rs485_1_Input() {
 void rs485_2_Input() {
   if (rs485_2_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._2 = rs485_2_Serial.readString();
+    RS485_INPUT_STR._2 = rs485_2_Serial.readStringUntil("\n");
     raspSerial.println(RS485_INPUT_STR._2);
   }
 }
@@ -169,7 +169,7 @@ void rs485_2_Input() {
 void rs485_3_Input() {
   if (rs485_3_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._3 = rs485_3_Serial.readString();
+    RS485_INPUT_STR._3 = rs485_3_Serial.readStringUntil("\n");
     raspSerial.println(RS485_INPUT_STR._3);
   }
 }
@@ -177,7 +177,7 @@ void rs485_3_Input() {
 void rs485_4_Input() {
   if (rs485_4_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._4 = rs485_4_Serial.readString();
+    RS485_INPUT_STR._4 = rs485_4_Serial.readStringUntil("\n");
     raspSerial.println(RS485_INPUT_STR._4);
   }
 }
@@ -204,7 +204,7 @@ void split(String* _resStrArr, String _string, char _delim, int _len)
 
 void pingRasp(void) {
   raspPingCount++;
-  String _pingStr = "h,p," + String(raspPingCount);
+  String _pingStr = "h,0,p," + String(raspPingCount);
   raspSerial.println(_pingStr);
   TimerID.RASP_PING_CHECK_RESPONSE = t.setTimeout(handdlePingRaspNotReponse, PING_RASP_CHECK_RESPONSE_DURATION);
   SEND_COUNT_STR = "PING RASP: " + String(raspPingCount);
@@ -231,16 +231,13 @@ void handleRaspInputStr(String _str) {
   String _strArr[_len];
   split(_strArr, _str, ',', _len);
   String _device = _strArr[0];
-  String _cmd = _strArr[1];
-  String _value = _strArr[2];
-  String _pingStr = "_device: " + _device + ", _cmd: " + _cmd + ", _value: " + _value;
-  raspSerial.println(_pingStr);
+  String _id = _strArr[1];
+  String _cmd = _strArr[2];
+  String _value = _strArr[3];
   if (_device == "h") {
     if (_cmd == "p") {
-      if (_value == String(raspPingCount + 1)) {
-        t.cancel(TimerID.RASP_PING_CHECK_RESPONSE);
-        RASP_PING_STATUS = "Ping Rasp OK";
-      }
+      t.cancel(TimerID.RASP_PING_CHECK_RESPONSE);
+      RASP_PING_STATUS = "Ping Rasp OK";
     }
   }
 }

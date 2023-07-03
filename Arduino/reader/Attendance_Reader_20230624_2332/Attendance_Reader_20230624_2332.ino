@@ -283,12 +283,16 @@ void rs485PingHostNoAnswerHandle(void)
   Serial.println(Rs485State.status);
 }
 
+bool isRs485Busy = false;
+
 void rs485SendStrToHost(String _cmd, String _str)
 {
-  Rs485State.send = = "r," + String(READER_ID) + "," + _cmd + "," + _str;
+  isRs485Busy = true;
+  Rs485State.send = "r," + String(READER_ID) + "," + _cmd + "," + _str;
   Serial.print("Rs485State.send: ");
   Serial.println(Rs485State.send);
-  rs485Serial.print(Rs485State.send);
+  rs485Serial.println(Rs485State.send);
+  isRs485Busy = false;
 }
 
 void rs485PingHost(void)
@@ -302,6 +306,12 @@ void rs485PingHost(void)
 }
 
 // QR
+
+void rs485SendStrToHostSafety (String _cmd, String _str) {
+  unsigned long startedWaiting = millis();
+  while (isRs485Busy && (millis() - startedWaiting < 300)) {};
+  rs485SendStrToHost(_cmd, _str);
+}
 
 void qrInput(void)
 {
@@ -340,7 +350,9 @@ void qrInput(void)
       QrState.read = String(_read);
       Serial.print("QR read str: ");
       Serial.println(QrState.read);
-      rs485SendStrToHost(QR_ID, QrState.read);
+      //      unsigned long startedWaiting = millis();
+      //      while (isRs485Busy && millis() - startedWaiting < 300) {};
+      rs485SendStrToHostSafety(QR_ID, QrState.read);
     }
   }
 }
@@ -450,26 +462,26 @@ uint8_t fingerCapturing()
   uint8_t p = finger.getImage();
   switch (p)
   {
-  case FINGERPRINT_OK:
-    FingerState.status = "Image taken";
-    Serial.println("Image taken");
-    break;
-  case FINGERPRINT_NOFINGER:
-    FingerState.status = "Working...";
-    //      Serial.println("No finger detected");
-    return p;
-  case FINGERPRINT_PACKETRECIEVEERR:
-    FingerState.status = "getImage Communication error";
-    Serial.println("Communication error");
-    return p;
-  case FINGERPRINT_IMAGEFAIL:
-    FingerState.status = "getImage Imaging error";
-    Serial.println("Imaging error");
-    return p;
-  default:
-    FingerState.status = "getImage Unknown error";
-    Serial.println("Unknown error");
-    return p;
+    case FINGERPRINT_OK:
+      FingerState.status = "Image taken";
+      Serial.println("Image taken");
+      break;
+    case FINGERPRINT_NOFINGER:
+      FingerState.status = "Working...";
+      //      Serial.println("No finger detected");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      FingerState.status = "getImage Communication error";
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_IMAGEFAIL:
+      FingerState.status = "getImage Imaging error";
+      Serial.println("Imaging error");
+      return p;
+    default:
+      FingerState.status = "getImage Unknown error";
+      Serial.println("Unknown error");
+      return p;
   }
 
   // OK success!
@@ -477,30 +489,30 @@ uint8_t fingerCapturing()
   p = finger.image2Tz();
   switch (p)
   {
-  case FINGERPRINT_OK:
-    FingerState.status = "Image converted";
-    Serial.println("Image converted");
-    break;
-  case FINGERPRINT_IMAGEMESS:
-    FingerState.status = "Image too messy";
-    Serial.println("Image too messy");
-    return p;
-  case FINGERPRINT_PACKETRECIEVEERR:
-    FingerState.status = "image2Tz Communication error";
-    Serial.println("Communication error");
-    return p;
-  case FINGERPRINT_FEATUREFAIL:
-    FingerState.status = "image2Tz Could not find fingerprint features";
-    Serial.println("Could not find fingerprint features");
-    return p;
-  case FINGERPRINT_INVALIDIMAGE:
-    FingerState.status = "image2Tz Could not find fingerprint features";
-    Serial.println("Could not find fingerprint features");
-    return p;
-  default:
-    FingerState.status = "image2Tz Unknown error";
-    Serial.println("Unknown error");
-    return p;
+    case FINGERPRINT_OK:
+      FingerState.status = "Image converted";
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      FingerState.status = "Image too messy";
+      Serial.println("Image too messy");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      FingerState.status = "image2Tz Communication error";
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      FingerState.status = "image2Tz Could not find fingerprint features";
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      FingerState.status = "image2Tz Could not find fingerprint features";
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      FingerState.status = "image2Tz Unknown error";
+      Serial.println("Unknown error");
+      return p;
   }
 
   // OK converted!
@@ -535,6 +547,7 @@ uint8_t fingerCapturing()
   Serial.print(" with confidence of ");
   Serial.println(finger.confidence);
   FingerState.read = String(finger.fingerID);
+  while (isRs485Busy = true) {};
   rs485SendStrToHost(FINGER_ID, FingerState.read);
   return finger.fingerID;
 }
