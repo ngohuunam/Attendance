@@ -75,6 +75,7 @@ void disableWiFi();
 
 void setup()
 {
+  Serial.begin(9600);
   disableWiFi();
   pinMode(RST_OLED, OUTPUT);
   digitalWrite(RST_OLED, LOW);
@@ -153,32 +154,32 @@ void rs485Forwarder() {
 void rs485_1_Input() {
   if (rs485_1_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._1 = rs485_1_Serial.readStringUntil("\n");
-    raspSerial.println(RS485_INPUT_STR._1);
+    RS485_INPUT_STR._1 = rs485_1_Serial.readStringUntil('\n');
+    raspSerial.print(RS485_INPUT_STR._1);
   }
 }
 
 void rs485_2_Input() {
   if (rs485_2_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._2 = rs485_2_Serial.readStringUntil("\n");
-    raspSerial.println(RS485_INPUT_STR._2);
+    RS485_INPUT_STR._2 = rs485_2_Serial.readStringUntil('\n');
+    raspSerial.print(RS485_INPUT_STR._2);
   }
 }
 
 void rs485_3_Input() {
   if (rs485_3_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._3 = rs485_3_Serial.readStringUntil("\n");
-    raspSerial.println(RS485_INPUT_STR._3);
+    RS485_INPUT_STR._3 = rs485_3_Serial.readStringUntil('\n');
+    raspSerial.print(RS485_INPUT_STR._3);
   }
 }
 
 void rs485_4_Input() {
   if (rs485_4_Serial.available() > 0) {
     delay(10);
-    RS485_INPUT_STR._4 = rs485_4_Serial.readStringUntil("\n");
-    raspSerial.println(RS485_INPUT_STR._4);
+    RS485_INPUT_STR._4 = rs485_4_Serial.readStringUntil('\n');
+    raspSerial.print(RS485_INPUT_STR._4);
   }
 }
 
@@ -204,7 +205,7 @@ void split(String* _resStrArr, String _string, char _delim, int _len)
 
 void pingRasp(void) {
   raspPingCount++;
-  String _pingStr = "h,0,p," + String(raspPingCount);
+  String _pingStr = "h,0,h,p," + String(raspPingCount);
   raspSerial.println(_pingStr);
   TimerID.RASP_PING_CHECK_RESPONSE = t.setTimeout(handdlePingRaspNotReponse, PING_RASP_CHECK_RESPONSE_DURATION);
   SEND_COUNT_STR = "PING RASP: " + String(raspPingCount);
@@ -232,12 +233,26 @@ void handleRaspInputStr(String _str) {
   split(_strArr, _str, ',', _len);
   String _device = _strArr[0];
   String _id = _strArr[1];
-  String _cmd = _strArr[2];
-  String _value = _strArr[3];
+  String _fn = _strArr[2];
+  String _cmd = _strArr[3];
+  String _value = _strArr[4];
   if (_device == "h") {
     if (_cmd == "p") {
+      String _pingStr = "h,0,h,pan," + String(raspPingCount);
+      raspSerial.println(_pingStr);
+    } else if (_cmd == "pan") {
       t.cancel(TimerID.RASP_PING_CHECK_RESPONSE);
       RASP_PING_STATUS = "Ping Rasp OK";
+    }
+  } else if (_device == "r") {
+    if (_id == "1") {
+      rs485_1_Serial.println(_str);
+    } else if (_id == "2") {
+      rs485_2_Serial.println(_str);
+    } else if (_id == "3") {
+      rs485_3_Serial.println(_str);
+    } else if (_id == "4") {
+      rs485_4_Serial.println(_str);
     }
   }
 }

@@ -1,0 +1,45 @@
+[
+  {
+    "id": "h0",
+    "name": "Host 0",
+    "symbol": "h",
+    "no": "0",
+    "functions": []
+  },
+  {
+    "id": "r1",
+    "type": "Reader",
+    "name": "Cửa chính",
+    "symbol": "r",
+    "no": "1",
+    "functions": [
+      "f",
+      "q",
+      "o"
+    ],
+    "fingerIds": [
+      {
+        "fingerId": "2",
+        "userId": "nam"
+      }
+    ]
+  },
+  {
+    "id": "r2",
+    "type": "Reader",
+    "name": "Nhà xe",
+    "symbol": "r",
+    "no": "2",
+    "functions": [
+      "f",
+      "q",
+      "o"
+    ],
+    "fingerprintIDs": [
+      {
+        "fingerId": "2",
+        "userId": "nam"
+      }
+    ]
+  }
+]

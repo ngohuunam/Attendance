@@ -1,0 +1,28 @@
+[
+  {
+    "id": "cua_chinh",
+    "name": "Cửa chính",
+    "deviceId": "r1",
+    "relayId": "rl1",
+    "permissions": [
+      {
+        "userId": "nam",
+        "time": "all",
+        "active": true
+      }
+    ]
+  },
+  {
+    "id": "nha_xe",
+    "name": "Nhà xe",
+    "deviceId": "r2",
+    "relayId": "rl2",
+    "permissions": [
+      {
+        "userId": "nam",
+        "time": "all",
+        "active": true
+      }
+    ]
+  }
+]

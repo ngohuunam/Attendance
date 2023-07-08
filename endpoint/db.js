@@ -10,25 +10,35 @@ import { runAtSpecificTimeOfDay, propExists } from "./tools.js";
 
 import { botSend } from "./bot.js";
 
-let dbObj;
-let dbDevice;
+let eventDBObj;
+let infoDBObj;
 let timerID = { out: 0, interval: 0 };
-  
+
 const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = dirname(__filename);
 
-export const initDBDevice = () => {
-  if (dbDevice) return dbDevice;
+export const initInfoDB = () => {
+  console.log(checkInfoDBCreated());
+  if (checkInfoDBCreated()) return infoDBObj;
 
-  const _file = join(__dirname, "/dbjson/device.json");
-  const _adapter = new JSONFileSync(_file);
-  dbDevice = new LowSync(_adapter, []);
-  dbDevice.read();
-  return dbDevice;
+  const _jsonFileNames = ["devices", "doors", "users", "relays", "status"];
+
+  infoDBObj = {};
+
+  _jsonFileNames.map((name) => {
+    const _file = join(__dirname, `/dbjson/${name}.json`);
+    const _adapter = new JSONFileSync(_file);
+    infoDBObj[name] = new LowSync(_adapter, []);
+    infoDBObj[name].read();
+  });
+
+  return infoDBObj;
 };
 
-export const createDB = () => {
+export const checkInfoDBCreated = () => Boolean(propExists(infoDBObj, "devices.data"));
+
+export const createEventDB = () => {
   const createLowDBPath = () => {
     const d = new Date();
     const year = d.getFullYear();
@@ -54,23 +64,23 @@ export const createDB = () => {
     qr: [],
   };
 
-  if (!dbObj) dbObj = {};
+  if (!eventDBObj) eventDBObj = {};
 
   Object.keys(_defaultData).map((key) => {
     const _file = join(folderPath, pathLowDB[key]);
     const _adapter = new JSONFileSync(_file);
-    dbObj[key] = new LowSync(_adapter, _defaultData[key]);
-    dbObj[key].read();
+    eventDBObj[key] = new LowSync(_adapter, _defaultData[key]);
+    eventDBObj[key].read();
   });
 
-  return dbObj;
+  return eventDBObj;
 };
 
 import _update from "lodash.update";
 
-export const pushDB = (dbName, path, value, botMess) => {
-  if (!dbObj) createDB();
-  const _db = dbObj[dbName];
+export const pushEventDB = (dbName, path, value, botMess) => {
+  if (!checkEventDBCreated()) createEventDB();
+  const _db = eventDBObj[dbName];
   if (!_db) return;
   const _deep = `data.${path}`;
   _update(_db, _deep, (n) => (n ? [...n, ...[value]] : [value]));
@@ -78,12 +88,15 @@ export const pushDB = (dbName, path, value, botMess) => {
   return _db;
 };
 
-export const pushDBAndWrite = (dbName, path, value, botMess) => {
-  const _db = pushDB(dbName, path, value, botMess);
+export const pushEventDBAndWrite = (dbName, path, value, botMess) => {
+  const _db = pushEventDB(dbName, path, value, botMess);
   if (!_db) return;
   return _db.write();
 };
 
-export const initDB = () => {
-  runAtSpecificTimeOfDay(18, 54, createDB, timerID);
+export const initEventDB = () => {
+  if (!checkEventDBCreated()) createEventDB();
+  runAtSpecificTimeOfDay(0, 0, createEventDB, timerID);
 };
+
+export const checkEventDBCreated = () => Boolean(propExists(eventDBObj, "raw.data"));

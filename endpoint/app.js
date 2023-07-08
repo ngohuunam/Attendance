@@ -52,59 +52,44 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
-// import { SerialPort } from "serialport";
-import { SerialPortStream } from "@serialport/stream";
-import { ReadlineParser } from "@serialport/parser-readline";
+import { portWrite, parser } from "./serialport.js";
 
-import { MockBinding } from "@serialport/binding-mock";
+import { initEventDB, pushEventDB, pushEventDBAndWrite, initInfoDB } from "./db.js";
 
-MockBinding.createPort("/dev/ROBOT", { echo: true, record: true });
+initEventDB();
 
-const port = new SerialPortStream({ binding: MockBinding, path: "/dev/ROBOT", baudRate: 14400 });
+const infoDBObj = initInfoDB();
 
-const parser = port.pipe(new ReadlineParser());
+const devices = infoDBObj.devices.data;
 
-// const port = new SerialPort({ path: "/dev/ROBOT", baudRate: 9600 }, function (err) {
-//   if (err) {
-//     return console.log("Error: ", err.message);
-//   }
-// });
+const connectLostTimestamp = devices.reduce((p, c) => ({ ...p, ...{ [c.name]: 999 } }), {});
 
-// import { runAtSpecificTimeOfDay } from "./tools.js";
-
-// import initBot from "./bot.js";
-
-// const bot = initBot();
-
-import { initDB, pushDB, pushDBAndWrite, initDBDevice } from "./db.js";
-
-initDB();
-
-const devices = initDBDevice().data;
-
-const connectLostTimestamp = devices.reduce((p, c) => ({ ...p, ...{ [c.propName]: 999 } }), {});
-
-const connectLostCount = devices.reduce((p, c) => ({ ...p, ...{ [c.propName]: 0 } }), {});
+const connectLostCount = devices.reduce((p, c) => ({ ...p, ...{ [c.name]: 0 } }), {});
 
 const pingCount = { ...connectLostCount };
 
-parser.on("data", function (data) {
-  const dataArr = data.split(",");
-  const _d = dataArr[0];
-  const _i = dataArr[1];
+let temp = {};
 
-  const device = devices.find((dv) => dv.d === _d && dv.i === _i);
+parser.on("data", function (data) {
+  const dataArr = data.replace(/(?:\r\n|\r|\n)/g, "").split(",");
+  const _symbol = dataArr[0];
+  const _no = dataArr[1];
+  const device = devices.find((dv) => dv.symbol === _symbol && dv.no === _no);
 
   if (!device) return;
 
-  const _cmd = dataArr[2];
-  const _prop = device.propName;
+  const _fn = dataArr[2];
+
+  const _preResp = `${_symbol},${_no},${_fn}`;
+
+  const _cmd = dataArr[3];
+  const _prop = device.name;
   const _time = new Date().toLocaleTimeString("vi");
 
-  let _db;
+  let _eventDb;
 
   if (connectLostTimestamp[_prop] > 0) {
-    _db = pushDB("raw", _prop, `Connected: ${_time}`, device.displayName);
+    _eventDb = pushEventDB("raw", _prop, `Connected: ${_time}`, device.name);
     connectLostTimestamp[_prop] = 0;
   }
 
@@ -112,66 +97,100 @@ parser.on("data", function (data) {
 
   if (_cmd === "p") {
     pingCount[_prop]++;
-    const _res = `${_d},${_i},p,${pingCount[_prop]}`;
-    return port.write(_res);
+    const _res = `${_preResp},pan,${pingCount[_prop]}`;
+    return portWrite(_res);
   }
 
-  const _value = dataArr[3];
-  let _savedata = `${_time},${data}`;
+  const _value = dataArr[4];
+  let _savedata = `${_time}: ${data}`;
   let _needWriteDB = false;
+  let _res;
 
-  _db = pushDB("raw", _prop, _savedata, device.displayName);
-  _needWriteDB = !!_db && true;
+  _eventDb = pushEventDB("raw", _prop, _savedata, device.name);
+  _needWriteDB = !!_eventDb && true;
 
-  if (_cmd === "fe") {
-    const _fingerID = _value ? parseInt(_value) : 199;
-    const _res = `r,${_cmd},fe,${_fingerID}}`;
-    port.write(_res);
+  if (_cmd === "fsc") {
+    _res = `${_preResp},fsc,err,noid`;
+    if (_value) {
+      _res = `${_preResp},fsc,err,noqueryid`;
+      const _queryUserId = device.fingerIds.find((_idObj) => _idObj.fingerId === _value)?.userId;
+      if (_queryUserId) {
+        _res = `${_preResp},fsc,err,denied`;
+        const _permissions = infoDBObj.doors.data.find((d) => d.deviceId === device.id)?.permissions;
+        if (_permissions) {
+          const _user = _permissions.find((_pObj) => _pObj.userId === _queryUserId);
+          if (_user) {
+            _res = `${_preResp},fsc,granted`;
+            console.log(`user: ${_user.userId}, position: ${device.name} permission granted`);
+          } else {
+            console.log(`user: ${_user.userId}, position: ${device.name} permission denied`);
+          }
+        }
+      }
+    }
+  } else if (_cmd === "fe") {
+    if (_fn === "q") {
+      if (_value) {
+        const [_id, _name] = _value.split(",");
+        if (parseInt(_id) < 1 || parseInt(_id) > 200) {
+          _res = `${_preResp},fe,err,idinvalid`;
+        } else {
+          temp.name = _name;
+          const _idIsExisted = device.fingerIds.some((_idObj) => _idObj.fingerId === _id);
+          _res = `${_preResp},fe,${_idIsExisted ? "err,exist" : _id}`;
+        }
+      } else {
+        for (let i = 1; i <= 200; i++) {
+          const _idIsExisted = device.fingerIds.some((_idObj) => _idObj.fingerId === i.toString());
+          if (!_idIsExisted) {
+            _res = `${_preResp},fe,${i}`;
+            break;
+          }
+        }
+      }
+    } else if (_fn === "f") {
+      device.fingerIds.push({
+        fingerId: _value,
+        userId: temp.name,
+      });
+      infoDBObj.devices.write();
+      _res = `${_preResp},fe,done`;
+    }
   }
+
+  if (_res) portWrite(_res);
 
   if (_needWriteDB) {
-    _db.write();
+    _eventDb.write();
   }
 });
 
-port.write("turn on", function (err) {
-  if (err) {
-    return console.log("Error on write: ", err.message);
-  }
-  console.log("message written");
-});
-
-// Open errors will be emitted as an error event
-port.on("error", function (err) {
-  const _savedata = `Port error: ${err.message} - ${new Date().toLocaleTimeString("vi")}`;
-  console.error(_savedata);
-  pushDBAndWrite("raw", "rasp", _savedata);
-});
+portWrite("turn on");
 
 const checkConnect = () => {
   let _needWriteDB = false;
-  let _db;
+  let _eventDb;
   Object.keys(connectLostCount).map((key) => {
-    console.log(`${key}: ${connectLostCount[key]}`);
+    // console.log(`${key}: ${connectLostCount[key]}`);
     connectLostCount[key]++;
     if (connectLostCount[key] > 3 && (connectLostTimestamp[key] === 0 || connectLostTimestamp[key] === 999)) {
       const timestamp = Date.now();
       connectLostTimestamp[key] = timestamp;
-      const _device = devices.find((dv) => dv.propName === key);
+      const _device = devices.find((dv) => dv.name === key);
       const _savedata = `Connect timeout: ${new Date(timestamp).toLocaleTimeString("vi")}`;
-      _db = pushDB("raw", key, _savedata, _device.displayName);
-      _needWriteDB = !!_db && true;
+      _eventDb = pushEventDB("raw", key, _savedata, _device.name);
+      _needWriteDB = !!_eventDb && true;
     }
   });
   if (_needWriteDB) {
     console.log("~ connectLostTimestamp:", connectLostTimestamp);
-    _db.write();
+    _eventDb.write();
   }
 };
 
 const raspRunning = () => {
   const _savedata = `Running: ${new Date().toLocaleTimeString("vi")}`;
-  pushDBAndWrite("raw", key, _savedata);
+  pushEventDBAndWrite("raw", "rasp", _savedata);
 };
 
 const checkConnectInterval_ms = 1 * 10 * 1000;
@@ -202,6 +221,6 @@ runAtSpecificTimeOfDay(
   timerID
 );
 
-pushDBAndWrite("raw", "rasp", "Startup: " + new Date().toLocaleTimeString("vi"));
+pushEventDBAndWrite("raw", "rasp", "Startup: " + new Date().toLocaleTimeString("vi"));
 
 export default app;

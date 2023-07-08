@@ -8,12 +8,10 @@ export const runAtSpecificTimeOfDay = (hour, minutes, func, _timerID) => {
   }
 
   _timerID.out = setTimeout(function () {
-    console.log("🚀 ~ file: tools.js:Timeout ~ hour:", hour)
     //run once
     func();
     // run every 24 hours from now on
     _timerID.interval = setInterval(function () {
-      console.log("🚀 ~ file: tools.js:Interval ~ hour:", hour)
       clearTimeout(_timerID.out);
       _timerID.out = 0;
       func();

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "nam",
+    "name": "Nam",
+    "room": "000",
+    "bikes": [
+      {
+        "name": "Air blade 125",
+        "no": "51F5-10248",
+        "doorId": "nha_xe"
+      }
+    ],
+    "personalInfo": {
+      "fullName": "Ngô Hữu Nam",
+      "cccd": "079082000616",
+      "birthday": "11/12/1982",
+      "gen": "Male",
+      "address": "123 TQT"
+    }
+  }
+]

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import TelegramBot from "node-telegram-bot-api";
+import { portWrite } from "./serialport.js";
 
 let bot;
 
@@ -14,17 +15,17 @@ const initBot = () => {
   // Create a bot that uses 'polling' to fetch new updates
   bot = new TelegramBot(token, { polling: true });
 
-  // Matches "/echo [whatever]"
-  bot.onText(/\/echo (.+)/, (msg, match) => {
+  bot.onText(/\/cmd (.+)/, (msg, match) => {
     // 'msg' is the received Message from Telegram
     // 'match' is the result of executing the regexp above on the text content
     // of the message
 
     // const chatId = msg.chat.id;
-    const resp = match[1]; // the captured "whatever"
+    const cmd = match[1];
 
+    return portWrite(cmd);
     // send back the matched "whatever" to the chat
-    bot.sendMessage(chatID, resp);
+    // bot.sendMessage(chatID, resp);
   });
 
   // Listen for any kind of message. There are different kinds of
@@ -33,7 +34,7 @@ const initBot = () => {
     // const chatId = msg.chat.id;
 
     // send a message to the chat acknowledging receipt of their message
-    bot.sendMessage(chatID, "chatId: " + chatID);
+    if (msg?.text === "chatid") bot.sendMessage(chatID, "chatId: " + chatID);
   });
 
   return bot;

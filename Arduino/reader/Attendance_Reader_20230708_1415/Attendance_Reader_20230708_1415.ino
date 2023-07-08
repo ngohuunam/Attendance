@@ -269,8 +269,6 @@ void rs485SendStrToHost(String _sensor, String _action, String _value)
   isRs485Busy = true;
   QrState.status = getCpuFrequencyMhz();
   Rs485State.send = "r," + String(READER_ID) + "," + _sensor + "," + _action + "," + _value;
-  Serial.print("Rs485State.send: ");
-  Serial.println(Rs485State.send);
   rs485Serial.println(Rs485State.send);
   isRs485Busy = false;
 }
@@ -287,7 +285,6 @@ void rs485PingHostNoAnswerHandle(void)
   TimerID.RS485_PING_HOST_NO_ANSWER = 0;
   Rs485State.re485PingHostNoAnswerCount++;
   Rs485State.status = "RS485 Ping host err: " + String(Rs485State.re485PingHostNoAnswerCount);
-  Serial.println(Rs485State.status);
 }
 
 void rs485PingHost(void)
@@ -569,9 +566,6 @@ void setupOled(void)
   oled.init();
   oled.flipScreenVertically();
   oledDrawText(0, "START UP...");
-  //  oled.clear();
-  //  oled.drawString(0, 0, "START UP...");
-  //  oled.display();
 }
 
 // FINGER
