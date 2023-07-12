@@ -30,6 +30,8 @@ struct
 // SOFTWARE SERIAL DECLARE
 #include <SoftwareSerial.h>
 
+#define BAUDRATE 57600
+
 // RS485
 #define RS485_RX_PIN 11
 #define RS485_TX_PIN 12
@@ -124,18 +126,47 @@ int rs485_parseData(String str) {
 }
 
 int rs485_println(String fn, String cmd, String cmdid, String value, String err) {
-  unsigned long startedWaiting = millis();
-  while (rs485Serial.available() > 0 && (millis() - startedWaiting < 20)) {};
+  while (rs485Serial.availableForWrite() != 1) {};
   String str = String(DEVICE) + "," + fn + "," + cmd + "," + cmdid + "," + value;
   if (err) {
     str = str + "," + err;
   }
   rs485Serial.println(str);
+  rs485Serial.flush();
   return 1;
 }
 
 int rs485_send(String fn, String cmd, String value, String err) {
   return rs485_println(fn, cmd, cmdID, value, err);
+}
+
+int rs485_handleInputStr(String _str) {
+  rs485_parseData(_str);
+  if (Rs485_data.device != DEVICE) {
+    return 0;
+  }
+  if (Rs485_data.fn == "f") {
+    finger_handleCmd();
+  } else if (Rs485_data.fn == "q") {
+    qr_handleCmd();
+  } else if (Rs485_data.fn == "r") {
+    reader_handleCmd();
+  } else if (Rs485_data.fn == "o") {
+    oled_handleCmd();
+  } else if (Rs485_data.fn == "l") {
+    led_handleCmd();
+  }
+  return 1;
+}
+
+void rs485_input(void)
+{
+  if (rs485Serial.available() > 0)
+  {
+    delay(10);
+    String _str = rs485Serial.readStringUntil('\n');
+    rs485_handleInputStr(_str);
+  }
 }
 /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485
 
@@ -846,35 +877,6 @@ void reader_handleCmd(void) {
   }
 }
 
-int rs485_handleInputStr(String _str) {
-  rs485_parseData(_str);
-  if (Rs485_data.device != DEVICE) {
-    return 0;
-  }
-  if (Rs485_data.fn == "f") {
-    finger_handleCmd();
-  } else if (Rs485_data.fn == "q") {
-    qr_handleCmd();
-  } else if (Rs485_data.fn == "r") {
-    reader_handleCmd();
-  } else if (Rs485_data.fn == "o") {
-    oled_handleCmd();
-  } else if (Rs485_data.fn == "l") {
-    led_handleCmd();
-  }
-  return 1;
-}
-
-void rs485_input(void)
-{
-  if (rs485Serial.available() > 0)
-  {
-    delay(10);
-    String _str = rs485Serial.readStringUntil('\n');
-    rs485_handleInputStr(_str);
-  }
-}
-
 void setupSerial(void)
 {
 
@@ -889,13 +891,13 @@ void setupSerial(void)
   pinMode(QR_RX_PIN, INPUT);
   pinMode(QR_TX_PIN, OUTPUT);
 
-  rs485Serial.begin(9600);
+  rs485Serial.begin(BAUDRATE);
 
-  fingerSerial.begin(57600);
-  finger.setBaudRate(FINGERPRINT_BAUDRATE_9600);
   fingerSerial.begin(9600);
+  finger.setBaudRate(FINGERPRINT_BAUDRATE_57600);
+  fingerSerial.begin(BAUDRATE);
 
-  qrSerial.begin(9600);
+  qrSerial.begin(BAUDRATE);
 
   oledDrawText("Setup serial done!");
 }
@@ -907,10 +909,10 @@ void setup() {
 
   setupOled();
   delay(10);
-  
+
   setupSerial();
   delay(10);
-  
+
   led.off();
   led.brightness(50);
   ledBlueBreath();
