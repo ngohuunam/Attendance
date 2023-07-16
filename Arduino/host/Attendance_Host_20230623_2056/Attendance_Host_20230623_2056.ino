@@ -28,6 +28,8 @@ tTimerID TimerID;
 
 #include <SoftwareSerial.h>
 
+#define BAUDRATE 57600
+
 #define RS485_RX_1 7  //18
 #define RS485_TX_1 6  //17
 
@@ -105,10 +107,10 @@ void setup()
   pinMode(RS485_RX_4, INPUT);
   pinMode(RS485_TX_4, OUTPUT);
 
-  rs485_1_Serial.begin(9600);
-  rs485_2_Serial.begin(9600);
-  rs485_3_Serial.begin(9600);
-  rs485_4_Serial.begin(9600);
+  rs485_1_Serial.begin(BAUDRATE);
+  rs485_2_Serial.begin(BAUDRATE);
+  rs485_3_Serial.begin(BAUDRATE);
+  rs485_4_Serial.begin(BAUDRATE);
 
   pinMode(RASP_RX, INPUT);
   pinMode(RASP_TX, OUTPUT);

@@ -1,7 +1,29 @@
 {
-  "reader": {
-    "d": "r",
-    "fe": "FINGERPRINT ENROLL",
+  "finger": {
+    "ping": {"fn": "f", "cmd": "ping", "value": "_"},
+    "enroll": {"fn": "f", "cmd": "enroll", "value": "_"},
     "fsc": "FINGERPRINT SCAN"
+  },
+  "led": {
+    "on": {"fn": "l", "cmd": "on", "value": "_"},
+    "off": {"fn": "l", "cmd": "off", "value": "_"},
+    "breath": {"fn": "l", "cmd": "breath", "value": "_"},
+    "breath_red": {"fn": "l", "cmd": "breath", "value": "red"},
+    "breath_blue": {"fn": "l", "cmd": "breath", "value": "blue"},
+    "breath_green": {"fn": "l", "cmd": "breath", "value": "green"},
+    "breath_yellow": {"fn": "l", "cmd": "breath", "value": "yellow"},
+    "notify_ok": {"fn": "l", "cmd": "notify", "value": "ok"},
+    "notify_error": {"fn": "l", "cmd": "notify", "value": "error"},
+    "wait": {"fn": "l", "cmd": "wait", "value": "_"},
+    "ms": {"fn": "l", "cmd": "ms", "value": "100"},
+    "flash": {"fn": "l", "cmd": "flash", "value": "_"},
+    "flash_red": {"fn": "l", "cmd": "flash", "value": "red"},
+    "flash_blue": {"fn": "l", "cmd": "flash", "value": "blue"},
+    "flash_green": {"fn": "l", "cmd": "flash", "value": "green"},
+    "flash_yellow": {"fn": "l", "cmd": "flash", "value": "yellow"},
+    "red": {"fn": "l", "cmd": "red", "value": "_"},
+    "blue": {"fn": "l", "cmd": "blue", "value": "_"},
+    "green": {"fn": "l", "cmd": "green", "value": "_"},
+    "yellow": {"fn": "l", "cmd": "yellow", "value": "_"}
   }
 }

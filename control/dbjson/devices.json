@@ -2,20 +2,14 @@
   {
     "id": "h0",
     "type": "Host",
-    "name": "Host 0",
-    "symbol": "h",
-    "no": "0",
-    "ping": 300000,
+    "doorId": "Host 0",
     "functions": [],
     "fingerIds": []
   },
   {
     "id": "r1",
     "type": "Reader",
-    "name": "Cửa chính",
-    "symbol": "r",
-    "no": "1",
-    "ping": 300000,
+    "doorId": "Cửa chính",
     "functions": [
       "f",
       "q",
@@ -31,10 +25,7 @@
   {
     "id": "r2",
     "type": "Reader",
-    "name": "Nhà xe",
-    "symbol": "r",
-    "no": "2",
-    "ping": 300000,
+    "doorId": "Nhà xe",
     "functions": [
       "f",
       "q",

@@ -11,7 +11,8 @@
   "scripts": {
     "test": "tap \"test/**/*.test.js\"",
     "start": "fastify start -l info app.ts",
-    "dev": "nodemon --exec ts-node-esm app.ts --inspect --project ./tsconfig.json"
+    "dev": "nodemon --exec ts-node-esm app.ts --inspect --project ./tsconfig.json",
+    "devv": "esrun --watch=./*.ts app.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +31,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.195",
-    "@types/node": "^20.4.1",
+    "@types/node": "^20.4.2",
     "@types/node-telegram-bot-api": "^0.61.6",
     "dotenv": "^16.3.1",
     "lowdb": "^6.0.1",

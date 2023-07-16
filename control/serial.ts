@@ -1,5 +1,5 @@
 import { SerialPortStream } from "@serialport/stream"
-import { ReadlineParser } from "@serialport/parser-readline"
+import { DelimiterParser } from '@serialport/parser-delimiter'
 
 import { MockBinding } from "@serialport/binding-mock"
 
@@ -10,7 +10,7 @@ MockBinding.createPort(portPath, { echo: true, record: true })
 
 export const port = new SerialPortStream({ binding: MockBinding, path: portPath, baudRate: 14400 })
 
-export const parser = port.pipe(new ReadlineParser())
+export const parser = port.pipe(new DelimiterParser({ delimiter: '.' }))
 
 // Open errors will be emitted as an error event
 port.on("error", function (err) {
@@ -21,8 +21,6 @@ port.on("error", function (err) {
 
 // wait for port to open...
 port.on('open', () => {
-  port.write('ecec')
-  port.drain()
   // ...then test by simulating incoming data
   port.port?.emitData("Hello, world!\n")
   const _savedata = `Port open: ${new Date().toLocaleTimeString("vi")}`
@@ -32,29 +30,34 @@ port.on('open', () => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// let portBusy = false
-const portDatas: string[] = []
-let portFree = true
+const portDatas: PortDatas_T = []
+let timeID: NodeJS.Timeout | null = null
 
-const writeAndDrain: (calback: () => void) => void = (callback) => {
+const writeAndDrain = () => {
   port.flush()
-  portFree = false
   const data = portDatas.shift()
-  port.write(data)
-  port.drain(callback)
-}
+  if (data) {
+    try {
+      port.write(data, function () {
+        port.drain(function() {
 
-const writeAndDrainMulti = () => {
-  console.log("🚀 ~ file: serialport.ts:42 ~ writeAndDrainMulti ~ portDatas.length:", portDatas.length)
-  if (portDatas.length > 0) {
-    writeAndDrain(writeAndDrainMulti)
-  } else {
-    portFree = true
+        })
+      })
+
+    } catch (e) {
+      console.error(e)
+    }
   }
 }
 
-export const portWrite: (data: string) => void = (data) => {
-  portDatas.push(data)
-  if (portFree) writeAndDrainMulti()
+timeID = setInterval(writeAndDrain, 300)
+
+export type PortDatas_T = string[]
+
+export const portWrite = (data: string) => {
+  const _data = data + '.'
+  portDatas.push(_data)
+  pushEventDBAndWrite("raw", "rasp", `port write: ${_data} - ${new Date().toLocaleTimeString("vi")}`)
+  return portDatas
 }
 

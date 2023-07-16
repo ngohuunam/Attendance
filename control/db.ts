@@ -10,20 +10,15 @@ import fs from "fs"
 import { runAtSpecificTimeOfDay, propExists, RunAtSpecificTimeOfDayTimerID_T } from "./tools.ts"
 
 import { botSend } from "./bot.ts"
+import { DB } from "types/DB"
 
 // Extend Low class with a new `chain` field
 export class LowWithLodash<T> extends LowSync<T> {
   chain: lodash.ExpChain<this['data']> = lodash.chain(this).get('data')
+  data: T = this.data
 }
 
-const infoDBFileNames = ["devices", "doors", "users", "relays"] as const
-type infoDBFileNames_T = typeof infoDBFileNames[number]
-
-export type InfoDBData_T = Record<string, any>[]
-
-type InfoDBObj_T = Record<infoDBFileNames_T, undefined | LowWithLodash<InfoDBData_T>>
-let infoDBObj = {} as InfoDBObj_T
-
+let infoDB: undefined | LowWithLodash<DB>
 
 const eventDBNames = ["raw", "finger", "qr"] as const
 type eventDBNames_T = typeof eventDBNames[number]
@@ -37,23 +32,15 @@ let eventDBObj = {} as EventDBObj_T
 
 let timerID: RunAtSpecificTimeOfDayTimerID_T = { out: 0, interval: 0 }
 
-const __filename = fileURLToPath(import.meta.url)
-
-const __dirname = dirname(__filename)
-
-export const checkInfoDBCreated = () => (infoDBFileNames.every(name => propExists(infoDBObj, name + ".data")))
-
 export const initInfoDB = () => {
-  if (checkInfoDBCreated()) return infoDBObj
+  if (infoDB !== undefined) return infoDB
+  
+  const _file = join(__dirname, `/dbjson/db.json`)
+  const _adapter = new JSONFileSync<DB>(_file)
 
-  infoDBFileNames.map((name) => {
-    const _file = join(__dirname, `/dbjson/${name}.json`)
-    const _adapter = new JSONFileSync<InfoDBData_T>(_file)
-    infoDBObj[name] = new LowWithLodash<InfoDBData_T>(_adapter, [])
-    infoDBObj[name]?.read()
-  })
+  infoDB = new LowWithLodash<DB>(_adapter, { devices: [], doors: [], users: [], qrs: [] })
 
-  return infoDBObj
+  return infoDB
 }
 
 const createLowDBPath: () => { folder: string, json: Record<typeof eventDBNames[number], string> } = () => {

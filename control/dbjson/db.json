@@ -1,0 +1,101 @@
+{
+  "devices": [
+    {
+      "id": "h0",
+      "type": "Host",
+      "doorID": "Host 0",
+      "functions": [],
+      "fingerIDs": []
+    },
+    {
+      "id": "r1",
+      "type": "Reader",
+      "doorID": "d1",
+      "functions": [
+        "f",
+        "q",
+        "o"
+      ],
+      "fingerIDs": [
+        {
+          "fingerID": "2",
+          "userID": "nam"
+        }
+      ]
+    },
+    {
+      "id": "r2",
+      "type": "Reader",
+      "doorID": "d2",
+      "functions": [
+        "f",
+        "q",
+        "o"
+      ],
+      "fingerIDs": [
+        {
+          "fingerID": "2",
+          "userID": "nam"
+        }
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "id": "d1",
+      "name": "Cửa chính",
+      "alias": "cuachinh",
+      "deviceID": "r1",
+      "relayID": "rl1",
+      "permissions": [
+        {
+          "userID": "nam",
+          "time": "all",
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "name": "Nhà xe",
+      "alias": "nhaxe",
+      "deviceID": "r2",
+      "relayID": "rl2",
+      "permissions": [
+        {
+          "userID": "nam",
+          "time": "all",
+          "active": true
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "nam",
+      "name": "Nam",
+      "room": "000",
+      "bikes": [
+        {
+          "name": "Air blade 125",
+          "no": "51F5-10248",
+          "doorID": "nha_xe"
+        }
+      ],
+      "personalInfo": {
+        "fullName": "Ngô Hữu Nam",
+        "cccd": "079082000616",
+        "birthday": "11/12/1982",
+        "gen": "Male",
+        "address": "123 TQT"
+      }
+    }
+  ],
+  "qrs": [
+    {
+      "id": "aaa",
+      "raw": "d1,ctrl,open",
+      "active": true
+    }
+  ]
+}

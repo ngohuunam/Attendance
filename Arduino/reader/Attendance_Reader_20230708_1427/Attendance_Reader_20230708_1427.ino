@@ -5,7 +5,9 @@
 #define SDA_PIN 9
 #define SCL_PIN 7
 #define OLED_ADDRESS 0x3c
-#define FONT_SIZE 9
+#define FONT_SIZE 10
+#define WIDTH 128
+#define HEIGHT 64
 
 SH1106Wire oled(OLED_ADDRESS, SDA_PIN, SCL_PIN); // ADDRESS, SDA, SCL
 
@@ -30,7 +32,7 @@ struct
 // SOFTWARE SERIAL DECLARE
 #include <SoftwareSerial.h>
 
-#define BAUDRATE 57600
+#define BAUDRATE 9600
 
 // RS485
 #define RS485_RX_PIN 11
@@ -82,7 +84,7 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
 /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485  /////  RS485
 // RS485 FUNCTIONS
 const String DEVICE = "r1";
-const int RS485_DATA_LEN = 5;
+const int RS485_DATA_LEN = 6;
 bool DEBUG = 1;
 String cmdID = "";
 
@@ -117,9 +119,10 @@ int rs485_parseData(String str) {
   Rs485_data.device = arr[0];
   Rs485_data.fn = arr[1];
   Rs485_data.cmd = arr[2];
-  Rs485_data.value = arr[3];
-  if (arr[4]) {
-    Rs485_data.err = arr[4];
+  Rs485_data.cmdid = arr[3];
+  Rs485_data.value = arr[4];
+  if (arr[5]) {
+    Rs485_data.err = arr[5];
   }
 
   return 0;
@@ -128,20 +131,34 @@ int rs485_parseData(String str) {
 int rs485_println(String fn, String cmd, String cmdid, String value, String err) {
   while (rs485Serial.availableForWrite() != 1) {};
   String str = String(DEVICE) + "," + fn + "," + cmd + "," + cmdid + "," + value;
-  if (err) {
+  if (err.length() > 3) {
     str = str + "," + err;
   }
-  rs485Serial.println(str);
+  oledDrawText(2, "rs485_println: " + str);
+  rs485Serial.print(str + ".");
   rs485Serial.flush();
   return 1;
 }
 
 int rs485_send(String fn, String cmd, String value, String err) {
+  String cmdID = String(random(100, 300));
   return rs485_println(fn, cmd, cmdID, value, err);
 }
 
+int rs485_response(String fn, String resp) {
+  if (resp == Rs485_data.value) {
+    return rs485_println(fn, Rs485_data.cmd, Rs485_data.cmdid, resp, "");
+  } else {
+    return rs485_println(fn, Rs485_data.cmd, Rs485_data.cmdid, "err", resp);
+  }
+  return 0;
+}
+
 int rs485_handleInputStr(String _str) {
+  if (_str.length() < 4) return 0;
   rs485_parseData(_str);
+  oledDrawText(2, _str + "-" + Rs485_data.device + "," + Rs485_data.fn + "," + Rs485_data.cmd + "," + Rs485_data.cmdid + "," + Rs485_data.value);
+  oledDrawString(1, _str);
   if (Rs485_data.device != DEVICE) {
     return 0;
   }
@@ -161,10 +178,10 @@ int rs485_handleInputStr(String _str) {
 
 void rs485_input(void)
 {
-  if (rs485Serial.available() > 0)
+  while (rs485Serial.available() > 0)
   {
     delay(10);
-    String _str = rs485Serial.readStringUntil('\n');
+    String _str = rs485Serial.readStringUntil('.');
     rs485_handleInputStr(_str);
   }
 }
@@ -239,7 +256,7 @@ void ledNotify(int _color[3], unsigned long ms)
 
 void ledSuccess()
 {
-  ledNotify(RGBLed::GREEN, 3000);
+  ledNotify(RGBLed::GREEN, 2000);
 }
 
 void ledError()
@@ -317,57 +334,59 @@ void ledBlueBreath()
   ledBreathWithColor(RGBLed::BLUE);
 }
 
-void led_handleCmd(void) {
-
-  String resp = "", err = "";
+int led_handleCmd(void) {
+  String resp = Rs485_data.value;
   if (Rs485_data.cmd == "off") {
     ledOff();
-    resp = Rs485_data.value;
   } else if (Rs485_data.cmd == "on") {
     ledOn();
-    resp = Rs485_data.value;
   } else if (Rs485_data.cmd == "breath") {
-    if (Rs485_data.value = "red") {
+    if (Rs485_data.value == "red") {
       ledBreathWithColor(RGBLed::RED);
-    } else if (Rs485_data.value = "blue") {
+    } else if (Rs485_data.value == "blue") {
       ledBreathWithColor(RGBLed::BLUE);
-    } else if (Rs485_data.value = "green") {
+    } else if (Rs485_data.value == "green") {
       ledBreathWithColor(RGBLed::GREEN);
-    } else if (Rs485_data.value = "yellow") {
+    } else if (Rs485_data.value == "yellow") {
       ledBreathWithColor(RGBLed::YELLOW);
     } else {
       ledBreath();
     }
-    resp = Rs485_data.value;
+  } else if (Rs485_data.cmd == "notify") {
+    if (Rs485_data.value == "ok") {
+      ledSuccess();
+    } else if (Rs485_data.value == "error") {
+      ledError();
+    }
+  } else if (Rs485_data.cmd == "wait") {
+    ledWaiting(( unsigned long )Rs485_data.value.toInt());
   } else if (Rs485_data.cmd == "ms") {
     ledSetMs( ( unsigned long )Rs485_data.value.toInt());
   } else if (Rs485_data.cmd == "flash") {
-    if (Rs485_data.value = "red") {
+    if (Rs485_data.value == "red") {
       ledFlashWithColor(RGBLed::RED);
-    } else if (Rs485_data.value = "blue") {
+    } else if (Rs485_data.value == "blue") {
       ledFlashWithColor(RGBLed::BLUE);
-    } else if (Rs485_data.value = "green") {
+    } else if (Rs485_data.value == "green") {
       ledFlashWithColor(RGBLed::GREEN);
-    } else if (Rs485_data.value = "yellow") {
+    } else if (Rs485_data.value == "yellow") {
       ledFlashWithColor(RGBLed::YELLOW);
     } else {
       ledFlash();
     }
-    resp = Rs485_data.value;
   } else if (Rs485_data.cmd == "red") {
     ledOnWithColor(RGBLed::RED);
-    resp = Rs485_data.value;
-  } else if (Rs485_data.cmd == "yellow") {
-    ledOnWithColor(RGBLed::YELLOW);
-    resp = Rs485_data.value;
+  } else if (Rs485_data.cmd == "blue") {
+    ledOnWithColor(RGBLed::BLUE);
   } else if (Rs485_data.cmd == "green") {
     ledOnWithColor(RGBLed::GREEN);
-    resp = Rs485_data.value;
+  } else if (Rs485_data.cmd == "yellow") {
+    ledOnWithColor(RGBLed::YELLOW);
+  } else {
+    resp = "NO CMD";
   }
-
-  if (resp) {
-    rs485_println("l", Rs485_data.cmd, Rs485_data.cmdid, resp, err);
-  }
+  oledDrawString(4, "Led resp: " + resp);
+  return rs485_response("l", resp);
 }
 
 /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED  /////  LED
@@ -375,22 +394,37 @@ void led_handleCmd(void) {
 /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED
 const unsigned long OLED_DISPLAY_OFF_TIMEOUT = 5000;
 
-void oledDrawText(const String &text)
+int oledClearLine(int lineNo, int height) {
+  int line = FONT_SIZE * (lineNo - 1);
+  oled.setColor(BLACK);
+  oled.fillRect(0, line, WIDTH, height + 2);
+  oled.setColor(WHITE);
+  return line;
+}
+
+void oledDrawString(int lineNo, const String &text)
 {
-  t.cancel(TimerID.OLED_DISPLAY);
-  oled.displayOn();
-  oled.clear();
-  //  oled.setFont(ArialMT_Plain_10);
-  //  oled.setTextAlignment(TEXT_ALIGN_LEFT);
-  oled.drawStringMaxWidth(0, 0, 128, text);
+  int line = oledClearLine(lineNo, FONT_SIZE);
+  oled.drawString(0, line, text);
   oled.display();
-  t.setTimeout(oledClearText, OLED_DISPLAY_OFF_TIMEOUT);
+}
+
+void oledDrawText(int lineNo, const String &text)
+{
+  //  t.cancel(TimerID.OLED_DISPLAY);
+  //  oled.displayOn();
+  //  oled.clear();
+  int line = oledClearLine(lineNo, HEIGHT);
+  oled.drawStringMaxWidth(0, line, WIDTH, text);
+  oled.display();
+  //  t.setTimeout(oledClearText, OLED_DISPLAY_OFF_TIMEOUT);
 }
 
 void oledClearText(void)
 {
   oled.clear();
-  oled.drawStringMaxWidth(0, 0, 128, "                                                                                                                                        ");
+  oled.setColor(BLACK);
+  oled.fillRect(0, 0, WIDTH, HEIGHT);
   oled.display();
   oled.displayOff();
 }
@@ -406,26 +440,26 @@ void setupOled(void)
 
   oled.init();
   oled.flipScreenVertically();
-  oledDrawText("START UP...");
+  oledDrawString(1, "START UP...");
 }
 
-void oled_handleCmd(void) {
+int oled_handleCmd(void) {
 
-  String resp = "", err = "";
+  String resp = Rs485_data.value;
   if (Rs485_data.cmd == "off") {
     oled.displayOff();
-    resp = Rs485_data.value;
   } else if (Rs485_data.cmd == "on") {
     oled.displayOn();
-    resp = Rs485_data.value;
   } else if (Rs485_data.cmd == "flip") {
     oled.flipScreenVertically();
-    resp = Rs485_data.value;
+  } else if (Rs485_data.cmd == "draw") {
+    oledDrawText(2, Rs485_data.value);
+  } else if (Rs485_data.cmd == "clear") {
+    oledClearText();
+  } else {
+    resp = "NO CMD";
   }
-
-  if (resp) {
-    rs485_println("o", Rs485_data.cmd, Rs485_data.cmdid, resp, err);
-  }
+  return rs485_response("o", resp);
 }
 /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED
 
@@ -437,24 +471,24 @@ String finger_capture() {
   {
     case FINGERPRINT_OK:
       _status = "Image taken";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledOnNotify(RGBLed::YELLOW);
       break;
     case FINGERPRINT_NOFINGER:
       return "";
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Get Image: Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_IMAGEFAIL:
       _status = "Get Image: Imaging error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Get Image: Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
@@ -469,27 +503,27 @@ String finger_capture() {
       break;
     case FINGERPRINT_IMAGEMESS:
       _status = "Convert Image: Image too messy";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Convert Image: Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_FEATUREFAIL:
       _status = "Convert Image: Could not find fingerprint features";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_INVALIDIMAGE:
       _status = "Convert Image: Could not find fingerprint features";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Convert Image: Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
@@ -503,22 +537,22 @@ String finger_capture() {
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Finger search: Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_NOTFOUND:
       _status = "Finger search: Did not find a match";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Finger search: Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
   // found a match!
-  oledDrawText("Wait for authorize...");
+  oledDrawText(2, "Wait for authorize..." + String(finger.fingerID));
   ledSuccess();
   rs485_send("f", "captured", String(finger.fingerID), "");
   return _status;
@@ -526,14 +560,14 @@ String finger_capture() {
 
 String finger_enroll(String id) {
   String _status = "Waiting finger on...";
-  oledDrawText(_status);
+  oledDrawText(2, _status);
   ledOnNotify(RGBLed::YELLOW);
   unsigned long startedWaiting = millis();
   int p = -1;
   while (p != FINGERPRINT_OK) {
     if (millis() - startedWaiting > FINGERPRINT_ENROLL_TIMEOUT) {
       _status = "Enroll finger timeout";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     }
@@ -547,17 +581,17 @@ String finger_enroll(String id) {
         break;
       case FINGERPRINT_PACKETRECIEVEERR:
         _status = "Get image Communication error";
-        oledDrawText(_status);
+        oledDrawText(2, _status);
         ledError();
         break;
       case FINGERPRINT_IMAGEFAIL:
         _status = "Get image Imaging error";
-        oledDrawText(_status);
+        oledDrawText(2, _status);
         ledError();
         break;
       default:
         _status = "Get image Unknown error";
-        oledDrawText(_status);
+        oledDrawText(2, _status);
         ledError();
         break;
     }
@@ -572,33 +606,33 @@ String finger_enroll(String id) {
       break;
     case FINGERPRINT_IMAGEMESS:
       _status = "Image convert 1: Image too messy";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Image convert 1: Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_FEATUREFAIL:
       _status = "Image convert 1: Could not find fingerprint features";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_INVALIDIMAGE:
       _status = "Image convert 1: Could not find fingerprint features";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Image convert 1: Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
 
   _status = "Remove finger";
-  oledDrawText(_status);
+  oledDrawText(2, _status);
   ledOnNotify(RGBLed::GREEN);
   delay(2000);
   p = 0;
@@ -607,13 +641,13 @@ String finger_enroll(String id) {
   }
   p = -1;
   _status = "Place same finger again";
-  oledDrawText(_status);
+  oledDrawText(2, _status);
   ledOnNotify(RGBLed::YELLOW);
   startedWaiting = millis();
   while (p != FINGERPRINT_OK) {
     if (millis() - startedWaiting > FINGERPRINT_ENROLL_TIMEOUT) {
       _status = "Capture finger again timeout";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     }
@@ -627,17 +661,17 @@ String finger_enroll(String id) {
         break;
       case FINGERPRINT_PACKETRECIEVEERR:
         _status = "Get image Communication error";
-        oledDrawText(_status);
+        oledDrawText(2, _status);
         ledError();
         break;
       case FINGERPRINT_IMAGEFAIL:
         _status = "Get image Imaging error";
-        oledDrawText(_status);
+        oledDrawText(2, _status);
         ledError();
         break;
       default:
         _status = "Get image Unknown error";
-        oledDrawText(_status);
+        oledDrawText(2, _status);
         ledError();
         break;
     }
@@ -652,27 +686,27 @@ String finger_enroll(String id) {
       break;
     case FINGERPRINT_IMAGEMESS:
       _status = "Image convert 2: Image too messy";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Image convert 2: Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_FEATUREFAIL:
       _status = "Image convert 2: Could not find fingerprint features";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_INVALIDIMAGE:
       _status = "Image convert 2: Could not find fingerprint features";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Image convert 2: Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
@@ -686,17 +720,17 @@ String finger_enroll(String id) {
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Create model: Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_ENROLLMISMATCH:
       _status = "Create model: Fingerprints did not match";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Create model: Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
@@ -708,28 +742,27 @@ String finger_enroll(String id) {
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
       _status = "Store model Communication error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_BADLOCATION:
       _status = "Store model Could not store in that location";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     case FINGERPRINT_FLASHERR:
       _status = "Store model Error writing to flash";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
     default:
       _status = "Store model Unknown error";
-      oledDrawText(_status);
+      oledDrawText(2, _status);
       ledError();
       return _status;
   }
-  oledDrawText("Finger created, waiting for store on server...");
   ledSuccess();
-  return _status;
+  return id;
 }
 
 String finger_delete(String id) {
@@ -758,45 +791,29 @@ String finger_emptyDatabase() {
 }
 
 int finger_handleCmd(void) {
-
-  unsigned long startedWaiting = millis();
-  while (fingerSerial.available() > 0 && (millis() - startedWaiting < 20)) {};
-
   String resp = Rs485_data.value;
-  String err = "";
   if (Rs485_data.cmd == "ping") {
     if (!finger.verifyPassword()) {
-      resp = "";
+      resp = "Fingerprint verify failed";
     }
   } else if (Rs485_data.cmd == "enroll") {
-    if (Rs485_data.value == "err") {
-      String _status = "Fingerprint enroll store on server err!";
-      oledDrawText(_status);
-      ledError();
-    } else if (Rs485_data.value == "done") {
-      String _status = "FIngerprint enroll success!";
-      oledDrawText(_status);
-      ledSuccess();
-    } else {
-      resp = finger_enroll(Rs485_data.value);
-    }
+    resp = finger_enroll(Rs485_data.value);
   } else if (Rs485_data.cmd == "delete") {
     resp = finger_delete(Rs485_data.value);
   } else if (Rs485_data.cmd == "empty") {
     resp = finger_emptyDatabase();
   } else if (Rs485_data.cmd == "getid") {
     finger.getParameters();
-    resp = String(finger.system_id, HEX);
-  } else if (Rs485_data.cmd == "stop") {
+    Rs485_data.value = String(finger.system_id, HEX);
+    resp = Rs485_data.value;
+  } else if (Rs485_data.cmd == "on") {
     t.cancel(TimerID.FINGER_CAPTURE);
-  } else if (Rs485_data.cmd == "start") {
+  } else if (Rs485_data.cmd == "off") {
     TimerID.FINGER_CAPTURE = t.setInterval(finger_capture, FINGERPRINT_CAPTURE_INTERVAL);
+  } else {
+    resp = "NO CMD";
   }
-
-  if (resp) {
-    rs485_println("f", Rs485_data.cmd, Rs485_data.cmdid, resp, err);
-  }
-  return 1;
+  return rs485_response("f", resp);
 }
 /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER
 
@@ -843,44 +860,36 @@ void qr_input(void)
   }
 }
 
-void qr_handleCmd(void) {
-
-  unsigned long startedWaiting = millis();
-  while (qrSerial.available() > 0 && (millis() - startedWaiting < 20)) {};
-
-  String resp = "", err = "";
+int qr_handleCmd(void) {
+  String resp = Rs485_data.value;
   if (Rs485_data.cmd == "ping") {
     qr_write(10, 0, 0, 0x30, 0x1A);
-  } else if (Rs485_data.cmd == "stop") {
+    return 0;
+  } else if (Rs485_data.cmd == "off") {
     t.cancel(TimerID.QR_INPUT);
-    resp = Rs485_data.value;
-  } else if (Rs485_data.cmd == "start") {
+  } else if (Rs485_data.cmd == "on") {
     TimerID.QR_INPUT = t.setInterval(qr_input, QR_INPUT_INTERVAL);
-    resp = Rs485_data.value;
+  } else {
+    resp = "NO CMD";
   }
-
-  if (resp) {
-    rs485_println("q", Rs485_data.cmd, Rs485_data.cmdid, resp, err);
-  }
+  return rs485_response("q", resp);
 }
 
-void reader_handleCmd(void) {
-  String resp = "", err = "";
+int reader_handleCmd(void) {
+  String resp = Rs485_data.value;
   if (Rs485_data.cmd == "ping") {
-    resp = Rs485_data.value;
   } else if (Rs485_data.cmd == "reset") {
     ESP.restart();
+  } else {
+    resp = "NO CMD";
   }
-
-  if (resp) {
-    rs485_println("r", Rs485_data.cmd, Rs485_data.cmdid, resp, err);
-  }
+  return rs485_response("r", resp);
 }
 
 void setupSerial(void)
 {
 
-  oledDrawText("Start serial...");
+  oledDrawText(2, "Start serial...");
 
   pinMode(RS485_RX_PIN, INPUT);
   pinMode(RS485_TX_PIN, OUTPUT);
@@ -893,13 +902,13 @@ void setupSerial(void)
 
   rs485Serial.begin(BAUDRATE);
 
-  fingerSerial.begin(9600);
-  finger.setBaudRate(FINGERPRINT_BAUDRATE_57600);
   fingerSerial.begin(BAUDRATE);
+  //  finger.setBaudRate(FINGERPRINT_BAUDRATE_9600);
+  //  fingerSerial.begin(BAUDRATE);
 
   qrSerial.begin(BAUDRATE);
 
-  oledDrawText("Setup serial done!");
+  oledDrawString(1, "Setup serial done!");
 }
 
 void setup() {
