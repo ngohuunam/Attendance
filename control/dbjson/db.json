@@ -94,7 +94,15 @@
   "qrs": [
     {
       "id": "aaa",
-      "raw": "d1,ctrl,open",
+      "cmd": {
+        "deviceId": "h0",
+        "func": "rl",
+        "cmd": "open",
+        "cmdId": "",
+        "value": "r1",
+        "err": "",
+        "source": ""
+      },
       "active": true
     }
   ]

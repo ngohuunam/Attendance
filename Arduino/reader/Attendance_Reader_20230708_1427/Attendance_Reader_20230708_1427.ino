@@ -73,6 +73,7 @@ RGBLed led(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, RGBLed::COMMON_ANODE);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
 
 #define FINGERPRINT_CAPTURE_INTERVAL 300
+#define FINGERPRINT_CAPTURE_SLOW_INTERVAL 900
 #define FINGERPRINT_ENROLL_TIMEOUT 1 * 3 * 60 * 1000
 
 // QR READER DECLARE
@@ -157,8 +158,10 @@ int rs485_response(String fn, String resp) {
 int rs485_handleInputStr(String _str) {
   if (_str.length() < 4) return 0;
   rs485_parseData(_str);
-  oledDrawText(2, _str + "-" + Rs485_data.device + "," + Rs485_data.fn + "," + Rs485_data.cmd + "," + Rs485_data.cmdid + "," + Rs485_data.value);
-  oledDrawString(1, _str);
+  if (DEBUG) {
+    oledDrawText(2, _str + "-" + Rs485_data.device + "," + Rs485_data.fn + "," + Rs485_data.cmd + "," + Rs485_data.cmdid + "," + Rs485_data.value);
+    oledDrawString(1, _str);
+  }
   if (Rs485_data.device != DEVICE) {
     return 0;
   }
@@ -318,9 +321,11 @@ void ledFlashWithColorAndInterval(int _color[3], unsigned long ms)
   ledFlash();
 }
 
-void ledBreath()
+void ledBreath(void)
 {
-  ledFlashWithInterval(LED_FADE_INTERVAL);
+  ledOff();
+  TimerID.LED_FLASH_ON = t.setTimeout(ledOn, led_ms / 3);
+  TimerID.LED_FLASH_OFF = t.setTimeout(ledBreath, led_ms);
 }
 
 void ledBreathWithColor(int _color[3])
@@ -464,31 +469,37 @@ int oled_handleCmd(void) {
 /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED  /////  OLED
 
 /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER  /////  FINGER
+
+String OLED_DEBUG(String debugText, String defaultText) {
+  if (DEBUG) {
+    oledDrawText(2, debugText);
+  } else {
+    oledDrawText(2, defaultText);
+  }
+  return debugText;
+}
+
 String finger_capture() {
   String _status = "Capturing...";
   uint8_t p = finger.getImage();
   switch (p)
   {
     case FINGERPRINT_OK:
-      _status = "Image taken";
-      oledDrawText(2, _status);
+      oledDrawText(2, "Đã đọc, xin chờ...");
       ledOnNotify(RGBLed::YELLOW);
       break;
     case FINGERPRINT_NOFINGER:
       return "";
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Get Image: Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("getImage(): PACKETRECIEVEERR", "Có lỗi, thử lại!");
       ledError();
       return _status;
     case FINGERPRINT_IMAGEFAIL:
-      _status = "Get Image: Imaging error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("getImage(): IMAGEFAIL", "Có lỗi, thử lại!");
       ledError();
       return _status;
     default:
-      _status = "Get Image: Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("getImage(): Unknown error", "Có lỗi, thử lại!");
       ledError();
       return _status;
   }
@@ -502,28 +513,23 @@ String finger_capture() {
       _status = "Convert Image: converted";
       break;
     case FINGERPRINT_IMAGEMESS:
-      _status = "Convert Image: Image too messy";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("image2Tz(): IMAGEMESS", "Có lỗi, thử lại!");
       ledError();
       return _status;
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Convert Image: Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("image2Tz(): PACKETRECIEVEERR", "Lỗi dữ liệu, thử lại!");
       ledError();
       return _status;
     case FINGERPRINT_FEATUREFAIL:
-      _status = "Convert Image: Could not find fingerprint features";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("image2Tz(): FEATUREFAIL", "Có lỗi, thử lại!");
       ledError();
       return _status;
     case FINGERPRINT_INVALIDIMAGE:
-      _status = "Convert Image: Could not find fingerprint features";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("image2Tz(): INVALIDIMAGE", "Có lỗi, thử lại!");
       ledError();
       return _status;
     default:
-      _status = "Convert Image: Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("image2Tz(): Unknown error", "Lỗi không xác định, thử lại!");
       ledError();
       return _status;
   }
@@ -536,62 +542,53 @@ String finger_capture() {
       _status = "ok";
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Finger search: Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("fingerSearch(): PACKETRECIEVEERR", "Lỗi dữ liệu, thử lại!");
       ledError();
       return _status;
     case FINGERPRINT_NOTFOUND:
-      _status = "Finger search: Did not find a match";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("fingerSearch(): NOTFOUND", "Không tìm thấy vân tay, thử lại!");
       ledError();
       return _status;
     default:
-      _status = "Finger search: Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("fingerSearch(): Unknown error", "Lỗi không xác định, thử lại!");
       ledError();
       return _status;
   }
   // found a match!
-  oledDrawText(2, "Wait for authorize..." + String(finger.fingerID));
-  ledSuccess();
+  OLED_DEBUG("Found matched finger: " + String(finger.fingerID), "Xin chờ dò dữ liệu...!");
+  ledWaiting(2000);
   rs485_send("f", "captured", String(finger.fingerID), "");
   return _status;
 }
 
 String finger_enroll(String id) {
-  String _status = "Waiting finger on...";
-  oledDrawText(2, _status);
+  String _status = OLED_DEBUG("Waiting for enroll...", "Chờ đọc vân tay mới...!");
   ledOnNotify(RGBLed::YELLOW);
   unsigned long startedWaiting = millis();
   int p = -1;
   while (p != FINGERPRINT_OK) {
     if (millis() - startedWaiting > FINGERPRINT_ENROLL_TIMEOUT) {
-      _status = "Enroll finger timeout";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll timeout", "Quá thời gian chờ!");
       ledError();
       return _status;
     }
     p = finger.getImage();
     switch (p) {
       case FINGERPRINT_OK:
-        _status = "Image taken";
+        _status = OLED_DEBUG("Enroll.getImage: OK", "Đã đọc, xin chờ!");
         break;
       case FINGERPRINT_NOFINGER:
-        _status += ".";
         break;
       case FINGERPRINT_PACKETRECIEVEERR:
-        _status = "Get image Communication error";
-        oledDrawText(2, _status);
+        _status = OLED_DEBUG("Enroll.getImage: PACKETRECIEVEERR", "Lỗi dữ liệu!");
         ledError();
         break;
       case FINGERPRINT_IMAGEFAIL:
-        _status = "Get image Imaging error";
-        oledDrawText(2, _status);
+        _status = OLED_DEBUG("Enroll.getImage: IMAGEFAIL", "Lỗi đọc vân tay!");
         ledError();
         break;
       default:
-        _status = "Get image Unknown error";
-        oledDrawText(2, _status);
+        _status = OLED_DEBUG("Enroll.getImage: Unknown error", "Lỗi không xác định!");
         ledError();
         break;
     }
@@ -602,76 +599,63 @@ String finger_enroll(String id) {
   p = finger.image2Tz(1);
   switch (p) {
     case FINGERPRINT_OK:
-      _status = "Image converted";
       break;
     case FINGERPRINT_IMAGEMESS:
-      _status = "Image convert 1: Image too messy";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(1): IMAGEMESS", "Lỗi chụp vân tay!");
       ledError();
       return _status;
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Image convert 1: Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(1): PACKETRECIEVEERR", "Lỗi dữ liệu!");
       ledError();
       return _status;
     case FINGERPRINT_FEATUREFAIL:
-      _status = "Image convert 1: Could not find fingerprint features";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(1): FEATUREFAIL", "Lỗi dữ liệu!");
       ledError();
       return _status;
     case FINGERPRINT_INVALIDIMAGE:
-      _status = "Image convert 1: Could not find fingerprint features";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(1): INVALIDIMAGE", "Lỗi dữ liệu!");
       ledError();
       return _status;
     default:
-      _status = "Image convert 1: Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(1): Unknown error", "Lỗi không xác định!");
       ledError();
       return _status;
   }
 
-  _status = "Remove finger";
-  oledDrawText(2, _status);
-  ledOnNotify(RGBLed::GREEN);
+  _status = OLED_DEBUG("Remove finger", "Nhấc tay ra...!");
+  ledOnNotify(RGBLed::BLUE);
   delay(2000);
   p = 0;
   while (p != FINGERPRINT_NOFINGER) {
     p = finger.getImage();
   }
   p = -1;
-  _status = "Place same finger again";
-  oledDrawText(2, _status);
+  _status = OLED_DEBUG("Place same finger again", "Đặt ngón vừa lấy vân tay lại, để lưu lần 2!");
   ledOnNotify(RGBLed::YELLOW);
   startedWaiting = millis();
   while (p != FINGERPRINT_OK) {
     if (millis() - startedWaiting > FINGERPRINT_ENROLL_TIMEOUT) {
-      _status = "Capture finger again timeout";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll timeout", "Quá thời gian chờ!");
       ledError();
       return _status;
     }
     p = finger.getImage();
     switch (p) {
       case FINGERPRINT_OK:
-        _status = "Image taken";
+        _status = OLED_DEBUG("Enroll.getImage: OK", "Đã đọc, xin chờ!");
         break;
       case FINGERPRINT_NOFINGER:
-        _status += ".";
         break;
       case FINGERPRINT_PACKETRECIEVEERR:
-        _status = "Get image Communication error";
-        oledDrawText(2, _status);
+        _status = OLED_DEBUG("Enroll.getImage: PACKETRECIEVEERR", "Lỗi dữ liệu!");
         ledError();
         break;
       case FINGERPRINT_IMAGEFAIL:
-        _status = "Get image Imaging error";
-        oledDrawText(2, _status);
+        _status = OLED_DEBUG("Enroll.getImage: IMAGEFAIL", "Lỗi đọc vân tay!");
         ledError();
         break;
       default:
-        _status = "Get image Unknown error";
-        oledDrawText(2, _status);
+        _status = OLED_DEBUG("Enroll.getImage: Unknown error", "Lỗi không xác định!");
         ledError();
         break;
     }
@@ -682,31 +666,25 @@ String finger_enroll(String id) {
   p = finger.image2Tz(2);
   switch (p) {
     case FINGERPRINT_OK:
-      _status = "Image converted";
       break;
     case FINGERPRINT_IMAGEMESS:
-      _status = "Image convert 2: Image too messy";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(2): IMAGEMESS", "Lỗi chụp vân tay!");
       ledError();
       return _status;
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Image convert 2: Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(2): PACKETRECIEVEERR", "Lỗi dữ liệu!");
       ledError();
       return _status;
     case FINGERPRINT_FEATUREFAIL:
-      _status = "Image convert 2: Could not find fingerprint features";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(2): FEATUREFAIL", "Lỗi dữ liệu!");
       ledError();
       return _status;
     case FINGERPRINT_INVALIDIMAGE:
-      _status = "Image convert 2: Could not find fingerprint features";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(2): INVALIDIMAGE", "Lỗi dữ liệu!");
       ledError();
       return _status;
     default:
-      _status = "Image convert 2: Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.image2Tz(2): Unknown error", "Lỗi không xác định!");
       ledError();
       return _status;
   }
@@ -716,21 +694,17 @@ String finger_enroll(String id) {
   p = finger.createModel();
   switch (p) {
     case FINGERPRINT_OK:
-      _status = "Image converted";
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Create model: Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.createModel: PACKETRECIEVEERR", "Lỗi dữ liệu!");
       ledError();
       return _status;
     case FINGERPRINT_ENROLLMISMATCH:
-      _status = "Create model: Fingerprints did not match";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.createModel: ENROLLMISMATCH", "Không khớp 2 vân tay!");
       ledError();
       return _status;
     default:
-      _status = "Create model: Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.createModel: Unknown error", "Lỗi không xác định!");
       ledError();
       return _status;
   }
@@ -738,26 +712,21 @@ String finger_enroll(String id) {
   p = finger.storeModel(id.toInt());
   switch (p) {
     case FINGERPRINT_OK:
-      _status = "Finger Stored!";
       break;
     case FINGERPRINT_PACKETRECIEVEERR:
-      _status = "Store model Communication error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.storeModel: PACKETRECIEVEERR", "Lỗi dữ liệu!");
       ledError();
       return _status;
     case FINGERPRINT_BADLOCATION:
-      _status = "Store model Could not store in that location";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.storeModel: BADLOCATION", "Bộ nhớ bị hỏng!");
       ledError();
       return _status;
     case FINGERPRINT_FLASHERR:
-      _status = "Store model Error writing to flash";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.storeModel: FLASHERR", "Lỗi lưu bộ nhớ!");
       ledError();
       return _status;
     default:
-      _status = "Store model Unknown error";
-      oledDrawText(2, _status);
+      _status = OLED_DEBUG("Enroll.storeModel: Unknown error", "Lỗi không xác định!");
       ledError();
       return _status;
   }
@@ -806,9 +775,16 @@ int finger_handleCmd(void) {
     finger.getParameters();
     Rs485_data.value = String(finger.system_id, HEX);
     resp = Rs485_data.value;
+  } else if (Rs485_data.cmd == "slow") {
+    t.cancel(TimerID.FINGER_CAPTURE);
+    TimerID.FINGER_CAPTURE = t.setInterval(finger_capture, FINGERPRINT_CAPTURE_SLOW_INTERVAL);
+  } else if (Rs485_data.cmd == "normal") {
+    t.cancel(TimerID.FINGER_CAPTURE);
+    TimerID.FINGER_CAPTURE = t.setInterval(finger_capture, FINGERPRINT_CAPTURE_INTERVAL);
+  } else if (Rs485_data.cmd == "off") {
+    t.cancel(TimerID.FINGER_CAPTURE);
   } else if (Rs485_data.cmd == "on") {
     t.cancel(TimerID.FINGER_CAPTURE);
-  } else if (Rs485_data.cmd == "off") {
     TimerID.FINGER_CAPTURE = t.setInterval(finger_capture, FINGERPRINT_CAPTURE_INTERVAL);
   } else {
     resp = "NO CMD";
@@ -852,6 +828,10 @@ void qr_input(void)
     {
       rs485_println("q", "ping", Rs485_data.cmdid, Rs485_data.value, "");
     }
+    else if ((2 == _read[0]) && (0 == _read[1]) && (0 == _read[2]) && (1 == _read[3]) && (0 == _read[4]))
+    {
+      rs485_println("q", "user", Rs485_data.cmdid, Rs485_data.value, "");
+    }
     else
     {
       String cmdid = String(random(100, 200));
@@ -865,6 +845,11 @@ int qr_handleCmd(void) {
   if (Rs485_data.cmd == "ping") {
     qr_write(10, 0, 0, 0x30, 0x1A);
     return 0;
+  } else if (Rs485_data.cmd == "user") {
+    qr_write(8, 0xD9, 0x55, 0xD1, 0x76);
+    return 0;
+  } else if (Rs485_data.cmd == "normal") {
+    qr_write(8, 0, 0xD6, 0xAB, 0xCD);
   } else if (Rs485_data.cmd == "off") {
     t.cancel(TimerID.QR_INPUT);
   } else if (Rs485_data.cmd == "on") {
@@ -880,6 +865,12 @@ int reader_handleCmd(void) {
   if (Rs485_data.cmd == "ping") {
   } else if (Rs485_data.cmd == "reset") {
     ESP.restart();
+  } else if (Rs485_data.cmd == "debug") {
+    if (Rs485_data.value == "on") {
+      DEBUG = true;
+    } else if (Rs485_data.value == "off") {
+      DEBUG = false;
+    }
   } else {
     resp = "NO CMD";
   }

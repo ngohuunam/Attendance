@@ -61,11 +61,15 @@ export const cmdTable = {
   reader: {
     ping: { func: 'r', cmd: 'ping' },
     reset: { func: 'r', cmd: 'reset' },
+    debug_on: { func: 'r', cmd: 'debug', value: 'on' },
+    debug_off: { func: 'r', cmd: 'debug', value: 'off' },
   },
   qr: {
     ping: { func: 'q', cmd: 'ping' },
     on: { func: 'q', cmd: 'on' },
     off: { func: 'q', cmd: 'off' },
+    user: { func: 'q', cmd: 'user' },
+    normal: { func: 'q', cmd: 'normal' },
   },
   finger: {
     ping: { func: 'f', cmd: 'ping' },
@@ -75,6 +79,8 @@ export const cmdTable = {
     getid: { func: 'f', cmd: 'getid' },
     on: { func: 'f', cmd: 'on' },
     off: { func: 'f', cmd: 'off' },
+    slow: { func: 'f', cmd: 'slow' },
+    normal: { func: 'f', cmd: 'normal' },
   },
   led: {
     on: { func: 'l', cmd: 'on' },
@@ -86,8 +92,8 @@ export const cmdTable = {
     breath_yellow: { func: 'l', cmd: 'breath', value: 'yellow', },
     ok: { func: 'l', cmd: 'notify', value: 'ok', },
     error: { func: 'l', cmd: 'notify', value: 'error', },
-    wait: { func: 'l', cmd: 'wait', },
-    ms: { func: 'l', cmd: 'ms', value: '_', },
+    wait: { func: 'l', cmd: 'wait', value: 1000 },
+    ms: { func: 'l', cmd: 'ms', value: 100, },
     flash: { func: 'l', cmd: 'flash', },
     flash_red: { func: 'l', cmd: 'flash', value: 'red', },
     flash_blue: { func: 'l', cmd: 'flash', value: 'blue', },

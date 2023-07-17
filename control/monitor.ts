@@ -1,5 +1,5 @@
 import { pushEventDBAndWrite } from "db"
-import { authFingerprint, ping, storeEnrolledFingerprint } from "handler"
+import { authFingerprint, handlerQrCode, ping, storeEnrolledFingerprint } from "handler"
 import { portWrite } from "serial.ts"
 import { UartData_T, deviceIDs, uartDataProps, uuid } from "tools.ts"
 
@@ -34,13 +34,12 @@ export const uartSendCmd = (cmdObj: UartData_T) => {
 }
 
 export const processUartRx = (raw: string) => {
-  pushEventDBAndWrite("raw", "rasp", `uart rx: ${raw} - ${new Date().toLocaleTimeString("vi")}`)
   const data = parseUartStr(raw)
-  const id = deviceIDs.find(_id => data.deviceId.includes(_id))
-  if (!id) return false
-  data.deviceId = id
+  const deviceId = deviceIDs.find(_id => data.deviceId.includes(_id))
+  if (!deviceId) return false
+  data.deviceId = deviceId
   const idx = cmdStores.findIndex(cmd => cmd.cmdId === data.cmdId)
-  console.log("~ file: monitor.ts:43 ~ processUartRx ~ cmd index:", idx)
+  console.log("~ file: monitor.ts:42 ~ processUartRx ~ cmd index:", idx)
   pushEventDBAndWrite("raw", "rasp", `cmd index: ${idx} - ${new Date().toLocaleTimeString("vi")}`)
   if (idx > -1) {
     cmdStores.splice(idx, 1)
@@ -52,6 +51,8 @@ export const processUartRx = (raw: string) => {
       return authFingerprint(data)
     case "enrolled":
       return storeEnrolledFingerprint(data)
+    case "read":
+      return handlerQrCode(data)
     default:
   }
   return false
@@ -87,7 +88,13 @@ const validateSendCmd = (raw: string) => {
   }
 }
 
+
+export const writeDBRawUartRx = (raw: string) => {
+  pushEventDBAndWrite("raw", "rasp", `uart rx: ${raw} - ${new Date().toLocaleTimeString("vi")}`)
+}
+
 export const parseUartStr = (raw: string) => {
+  writeDBRawUartRx(raw)
   const uartData = raw.trim().split(',').reduce((p, c, i) => ({ ...p, ...{ [uartDataProps[i]]: c } }), {} as UartData_T)
   uartData.source = raw
   return uartData

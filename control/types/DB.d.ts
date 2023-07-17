@@ -1,3 +1,5 @@
+import { UartData_T } from "tools";
+
 export type DB = {
   devices: Device[];
   doors: Door[];
@@ -57,6 +59,6 @@ export type PersonalInfo = {
 
 export type QR = {
   id: string;
-  raw: string;
+  cmd: UartData_T;
   active: boolean | string;
 }

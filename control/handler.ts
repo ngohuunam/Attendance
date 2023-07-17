@@ -4,6 +4,11 @@ import { CmdTable_T, DeviceIDs_T, Funcs_T, UartData_T, cmdTable, uuid } from "to
 
 const infoDB = initInfoDB()
 
+export const handlerQrCode = (data: UartData_T) => {
+  const cmd = infoDB.chain.get("qrs").find({ id: data.value, active: true }).get("cmd").value()
+  console.dir(cmd, { depth: null })
+}
+
 export const storeEnrolledFingerprint = (data: UartData_T) => {
   try {
     const device = infoDB.chain.get("devices").find({ id: data.deviceId })
@@ -23,14 +28,14 @@ export const storeEnrolledFingerprint = (data: UartData_T) => {
     if (permission) {
       permission.active = false
     } else {
-      permissions.push({ userID: userIDObj.userID, active: false, time: "all" }).value()
+      permissions.push({ userID: userIDObj.userID, active: false, time: "all" })
     }
     permissions.value()
+    uartSendCmdNotify({ data, raw: "ok" })
   } catch (e) {
     console.error(e)
     uartSendCmdNotify({ data, raw: "error" })
   }
-  uartSendCmdNotify({ data, raw: "ok" })
 }
 
 export const authFingerprint = (data: UartData_T) => {
@@ -44,7 +49,7 @@ export const authFingerprint = (data: UartData_T) => {
     isAuth = door.get("permissions").some({ userID: userId, active: true, time: "all" }).value()
     if (isAuth) {
       const relayID = door.get("relayID").value()
-      console.log("~ file: handler.ts:47 ~ authFingerprint ~ relayID:", relayID)
+      console.log("~ file: handler.ts:52 ~ authFingerprint ~ relayID:", relayID)
       openDoor({ relayID, source: data.source })
     }
   } catch (e) {
@@ -64,7 +69,7 @@ export type UartSendFnCmd_T = <T extends keyof CmdTable_T>(params: { data: UartD
 
 export const uartSendFnCmd: UartSendFnCmd_T = ({ data, func, raw }) => {
   const cmd = { ...data, ...cmdTable[func][raw] }
-  console.log("~ file: handler.ts:70 ~ uartSendFnCmd ~ cmd:", cmd)
+  console.log("~ file: handler.ts:72 ~ uartSendFnCmd ~ cmd:", cmd)
   return uartSendCmd(cmd)
 }
 
