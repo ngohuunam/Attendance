@@ -1,6 +1,8 @@
-import "dotenv/config";
+import * as dotenv from 'dotenv'
+dotenv.config()
+
 import TelegramBot from "node-telegram-bot-api";
-import { portWrite } from "./serial.ts";
+import { uartSendRaw } from 'monitor';
 
 let bot: TelegramBot;
 
@@ -22,8 +24,7 @@ const initBot = () => {
 
     // const chatId = msg.chat.id;
     const cmd = match ? match[1] : "";
-
-    return portWrite(cmd);
+    uartSendRaw(cmd)
     // send back the matched "whatever" to the chat
     // bot.sendMessage(chatID, resp);
   });

@@ -1,5 +1,4 @@
-import { join, dirname } from "node:path"
-import { fileURLToPath } from "node:url"
+import { join } from "node:path"
 
 import { LowSync } from "lowdb"
 import { JSONFileSync } from "lowdb/node"
@@ -7,9 +6,9 @@ import lodash from 'lodash'
 
 import fs from "fs"
 
-import { runAtSpecificTimeOfDay, propExists, RunAtSpecificTimeOfDayTimerID_T } from "./tools.ts"
+import { runAtSpecificTimeOfDay, propExists, RunAtSpecificTimeOfDayTimerID_T } from "tools"
 
-import { botSend } from "./bot.ts"
+import { botSend } from "bot"
 import { DB } from "types/DB"
 
 // Extend Low class with a new `chain` field

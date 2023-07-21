@@ -32,7 +32,7 @@ export const stringSentenceCase = (str: string) => str.replace(/\.\s+([a-z])[^\.
 export const uuid = () => Math.random().toString(36).replace(/[^a-z]+/g, '').substring(0, 3)
 
 export const uartDataProps = ["deviceId", "func", "cmd", "cmdId", "value", "err", "source"] as const
-export const deviceIDs = ["h0", "r1", "r2", "r3", "r4"] as const
+export const deviceIDs = ["h0", "r1", "r2", "r3", "r4", "all"] as const
 export const funcs = ["r", "f", "q", "o", "l", "rl"] as const
 
 export type UartDataProps_T = typeof uartDataProps[number]
@@ -60,16 +60,20 @@ export const cmdTable = {
   },
   reader: {
     ping: { func: 'r', cmd: 'ping' },
-    reset: { func: 'r', cmd: 'reset' },
+    version: { func: 'r', cmd: 'version' },
+    restart: { func: 'r', cmd: 'restart' },
     debug_on: { func: 'r', cmd: 'debug', value: 'on' },
     debug_off: { func: 'r', cmd: 'debug', value: 'off' },
   },
   qr: {
     ping: { func: 'q', cmd: 'ping' },
-    on: { func: 'q', cmd: 'on' },
-    off: { func: 'q', cmd: 'off' },
     user: { func: 'q', cmd: 'user' },
     normal: { func: 'q', cmd: 'normal' },
+    on: { func: 'q', cmd: 'on' },
+    off: { func: 'q', cmd: 'off' },
+    reboot_soft: { func: 'q', cmd: 'reboot', value: 'soft' },
+    reboot_hard: { func: 'q', cmd: 'reboot', value: 'hard' },
+    reboot_control: { func: 'q', cmd: 'reboot', value: 'control' },
   },
   finger: {
     ping: { func: 'f', cmd: 'ping' },
@@ -77,10 +81,11 @@ export const cmdTable = {
     delete: { func: 'f', cmd: 'delete' },
     empty: { func: 'f', cmd: 'empty' },
     getid: { func: 'f', cmd: 'getid' },
-    on: { func: 'f', cmd: 'on' },
-    off: { func: 'f', cmd: 'off' },
     slow: { func: 'f', cmd: 'slow' },
     normal: { func: 'f', cmd: 'normal' },
+    start: { func: 'f', cmd: 'start' },
+    stop: { func: 'f', cmd: 'stop' },
+    restart: { func: 'f', cmd: 'restart' },
   },
   led: {
     on: { func: 'l', cmd: 'on' },

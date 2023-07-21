@@ -13,18 +13,19 @@ import Fastify from 'fastify'
 
 const port: number = Number(process.env.PORT) || 5000
 
-import { portWrite, parser } from "./serial.ts"
-import { initEventDB, pushEventDBAndWrite, initInfoDB } from "./db.ts"
-import { processUartRx } from 'monitor.ts'
+import { portWrite, parser } from "serial"
+import { initEventDB, pushEventDBAndWrite, initInfoDB } from "db"
+import { processUartRx } from 'monitor'
+import initBot from 'bot'
 
 initEventDB()
+initInfoDB()
+initBot()
 
-const infoDB = initInfoDB()
-
-const devices = infoDB.chain.get("devices")
+// const devices = infoDB.chain.get("devices")
 
 parser.on("data", function (raw : Buffer) {
-  console.log("~ file: app.ts:27 ~ raw:", raw.toString())
+  console.log("~ file: app.ts:28 ~ raw:", raw.toString())
   processUartRx(raw.toString())
 })
 

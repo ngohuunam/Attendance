@@ -1,23 +1,16 @@
 import { pushEventDBAndWrite } from "db"
-import { authFingerprint, handlerQrCode, ping, storeEnrolledFingerprint } from "handler"
-import { portWrite } from "serial.ts"
-import { UartData_T, deviceIDs, uartDataProps, uuid } from "tools.ts"
-
-export type CmdObj_T = {
-  cmdId: string
-  raw: string
-  timestamp: number
-  interval: number
-  retry: number
-  counter: number
-  source: string
-}
+import { authFingerprint, handlePing, handleQrCode, ping, storeEnrolledFingerprint } from "handler"
+import { CmdObj_T } from "index"
+import { portWrite } from "serial"
+import { UartData_T, deviceIDs, uartDataProps, uuid } from "tools"
 
 export const cmdStores: CmdObj_T[] = []
 
+const delimiter = process.env.SERIAL_DELIMITER
+
 export const rawCmd =
   ({ deviceId, func, cmd, cmdId, value, err }: UartData_T, id?: string) =>
-    `${deviceId},${func},${cmd},${cmdId ? cmdId : (id ? id : uuid())},${value}${err ? `,${err}` : ""}`
+    `${deviceId},${func},${cmd},${cmdId ? cmdId : (id ? id : uuid())}${value ? `,${value}` : ""}${err ? `,${err}` : ""}${delimiter}`
 
 export const uartSendCmd = (cmdObj: UartData_T) => {
   const raw = rawCmd(cmdObj)
@@ -29,75 +22,57 @@ export const uartSendCmd = (cmdObj: UartData_T) => {
     retry: 3,
     counter: 0,
   })
-  console.log("~ file: monitor.ts:31 ~ uartSendCmd ~ cmdStores:", cmdStores)
+  console.log("~ file: monitor.ts:25 ~ uartSendCmd ~ cmdStores:", cmdStores)
   return portWrite(raw)
+}
+
+export const uartSendRaw = (raw: string) => {
+  const cmdObj = parseRawCmd(raw)
+  return uartSendCmd(cmdObj)
 }
 
 export const processUartRx = (raw: string) => {
   const data = parseUartStr(raw)
   const deviceId = deviceIDs.find(_id => data.deviceId.includes(_id))
-  if (!deviceId) return false
+  if (!deviceId) return
   data.deviceId = deviceId
   const idx = cmdStores.findIndex(cmd => cmd.cmdId === data.cmdId)
-  console.log("~ file: monitor.ts:42 ~ processUartRx ~ cmd index:", idx)
-  pushEventDBAndWrite("raw", "rasp", `cmd index: ${idx} - ${new Date().toLocaleTimeString("vi")}`)
+  console.log("~ file: monitor.ts:40 ~ processUartRx ~ cmd index:", idx)
   if (idx > -1) {
     cmdStores.splice(idx, 1)
-    return true
+    return
   }
-  clearInterval(pingInterval)
+  pushEventDBAndWrite("raw", "rasp", `cmd index: ${idx} - ${new Date().toLocaleTimeString("vi")}`)
   switch (data.cmd) {
+    case "ping":
+      handlePing(data)
+      break
     case "captured":
-      return authFingerprint(data)
+      authFingerprint(data)
+      break
     case "enrolled":
-      return storeEnrolledFingerprint(data)
+      storeEnrolledFingerprint(data)
+      break
     case "read":
-      return handlerQrCode(data)
+      handleQrCode(data)
+      break
     default:
-  }
-  return false
-}
-
-const checkCmd = (cmdStore: CmdObj_T) => {
-  const now = Date.now()
-  const period = 1 * 1 * 1 * 1000
-  const timepast = cmdStore.timestamp - now > period
-  cmdStore.counter += timepast ? 1 : 0
-  if (cmdStore.counter > 2) {
-    cmdStore.counter = 0
-    cmdStore.timestamp = Date.now()
+    // clearInterval(pingInterval)
   }
 }
-
-export const checkCmdStores = () => cmdStores.map(cmdStore => checkCmd(cmdStore))
-
-export const checkCmdStoresInterval = setInterval(function () { checkCmdStores() }, 20)
 
 export const parseRawCmd = (raw: string) => raw.split(',').reduce((p, c, i) => ({ ...p, [uartDataProps[i]]: c }), {} as UartData_T)
-
-const validateSendCmd = (raw: string) => {
-  const cmdObj = parseRawCmd(raw)
-  const { cmdId } = cmdObj
-  const cmdStoreIdx = cmdStores.findIndex(cmd => cmd.cmdId === cmdId)
-  const cmdStore = cmdStores[cmdStoreIdx]
-  if (cmdStore) {
-    cmdStores.splice(cmdStoreIdx, 1)
-    if (cmdStore.raw !== raw) {
-
-    }
-  }
-}
-
 
 export const writeDBRawUartRx = (raw: string) => {
   pushEventDBAndWrite("raw", "rasp", `uart rx: ${raw} - ${new Date().toLocaleTimeString("vi")}`)
 }
 
 export const parseUartStr = (raw: string) => {
+  raw.trim()
   writeDBRawUartRx(raw)
-  const uartData = raw.trim().split(',').reduce((p, c, i) => ({ ...p, ...{ [uartDataProps[i]]: c } }), {} as UartData_T)
+  const uartData = raw.split(',').reduce((p, c, i) => ({ ...p, ...{ [uartDataProps[i]]: c } }), {} as UartData_T)
   uartData.source = raw
   return uartData
 }
 
-const pingInterval = setInterval(function () { ping("r1", "r") }, 5000)
+// const pingInterval = setInterval(function () { ping({ deviceId: "r1", func: "r" }) }, 5000)

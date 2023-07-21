@@ -1,3 +1,5 @@
+const String VERSION = "1807";
+
 #include "SSD1306Wire.h"
 SSD1306Wire display(0x3c, SDA_OLED, SCL_OLED);
 #define FONT_SIZE 10
@@ -88,30 +90,33 @@ void rs485_1_Input() {
 }
 
 void rs485_2_Input() {
-  String input = "";
   while (rs485_2_Serial.available() > 0) {
     delay(10);
-    input = rs485_2_Serial.readString();
+    cmdStores += "reader:";
+    cmdStores += rs485_2_Serial.readStringUntil('.');
+    cmdStores += ".";
+    //    raspSerialForward(input);
   }
-  raspSerialForward(input);
 }
 
 void rs485_3_Input() {
-  String input = "";
   while (rs485_3_Serial.available() > 0) {
     delay(10);
-    input = rs485_3_Serial.readString();
+    cmdStores += "reader:";
+    cmdStores += rs485_3_Serial.readStringUntil('.');
+    cmdStores += ".";
+    //    raspSerialForward(input);
   }
-  raspSerialForward(input);
 }
 
 void rs485_4_Input() {
-  String input = "";
   while (rs485_4_Serial.available() > 0) {
     delay(10);
-    input = rs485_4_Serial.readString();
+    cmdStores += "reader:";
+    cmdStores += rs485_4_Serial.readStringUntil('.');
+    cmdStores += ".";
+    //    raspSerialForward(input);
   }
-  raspSerialForward(input);
 }
 
 int input_parseData(String str) {
@@ -249,8 +254,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   rasp_input();
-  rs485_1_Input();
-  rs485_2_Input();
+  //  rs485_1_Input();
+  //  rs485_2_Input();
   //  rs485_3_Input();
   //  rs485_4_Input();
   t.handle();

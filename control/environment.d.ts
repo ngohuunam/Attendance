@@ -5,6 +5,9 @@ declare global {
       PORT: string;
       BOT_TOKEN: string;
       CHAT_ID: string;
+      SERIAL_PATH: string;
+      SERIAL_BAUDRATE: string;
+      SERIAL_DELIMITER: string;
     }
   }
 }

@@ -2,9 +2,16 @@ import { initInfoDB } from 'db'
 import { uartSendCmd } from 'monitor'
 import { CmdTable_T, DeviceIDs_T, Funcs_T, UartData_T, cmdTable, uuid } from "tools"
 
+while (initInfoDB === undefined) {}
 const infoDB = initInfoDB()
 
-export const handlerQrCode = (data: UartData_T) => {
+export const handlePing = ({ deviceId, cmdId }: UartData_T) => {
+  if (deviceId.includes("r")) {
+    ping({ deviceId, func: "r", cmdId })
+  }
+}
+
+export const handleQrCode = (data: UartData_T) => {
   const cmd = infoDB.chain.get("qrs").find({ id: data.value, active: true }).get("cmd").value()
   console.dir(cmd, { depth: null })
 }
@@ -73,6 +80,6 @@ export const uartSendFnCmd: UartSendFnCmd_T = ({ data, func, raw }) => {
   return uartSendCmd(cmd)
 }
 
-export const ping = (deviceId: DeviceIDs_T, func: Funcs_T) => {
-  uartSendCmd({ deviceId, func, cmd: "ping", cmdId: uuid(), value: "", err: "", source: "" })
+export const ping = ({ deviceId, func, cmdId = uuid() }: { deviceId: DeviceIDs_T, func: Funcs_T, cmdId?: string }) => {
+  uartSendCmd({ deviceId, func, cmd: "ping", cmdId, value: "", err: "", source: "" })
 }
