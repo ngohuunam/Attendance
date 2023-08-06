@@ -1,5 +1,8 @@
 const String VERSION = "2007";
 
+#define SDA_OLED 8
+#define SCL_OLED 10
+
 #include "SSD1306Wire.h"
 SSD1306Wire display(0x3c, SDA_OLED, SCL_OLED);
 #define FONT_SIZE 10
@@ -18,8 +21,8 @@ tTimerID TimerID;
 #include <SoftwareSerial.h>
 #define BAUDRATE 9600
 
-#define RASP_RX 19
-#define RASP_TX 20
+#define RASP_RX 14
+#define RASP_TX 13
 EspSoftwareSerial::UART raspSerial(RASP_RX, RASP_TX);
 
 #define INPUT_DATA_LEN 6
@@ -162,10 +165,10 @@ void displayDrawText(int lineNo, const String &text)
 }
 
 int setupOled(void) {
-  pinMode(RST_OLED, OUTPUT);
-  digitalWrite(RST_OLED, LOW);
-  delay(20);
-  digitalWrite(RST_OLED, HIGH);
+//  pinMode(RST_OLED, OUTPUT);
+//  digitalWrite(RST_OLED, LOW);
+//  delay(20);
+//  digitalWrite(RST_OLED, HIGH);
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 

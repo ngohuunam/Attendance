@@ -1,8 +1,8 @@
 import { initInfoDB } from 'db'
 import { uartSendCmd } from 'monitor'
-import { CmdTable_T, DeviceIDs_T, Funcs_T, UartData_T, cmdTable, uuid } from "tools"
+import { CmdTable_T, DeviceIDs_T, Funcs_T, UartData_T, cmdTable, deviceIDs, uuid } from "tools"
 
-while (initInfoDB === undefined) {}
+while (initInfoDB === undefined) { }
 const infoDB = initInfoDB()
 
 export const handlePing = ({ deviceId, cmdId }: UartData_T) => {
@@ -76,10 +76,65 @@ export type UartSendFnCmd_T = <T extends keyof CmdTable_T>(params: { data: UartD
 
 export const uartSendFnCmd: UartSendFnCmd_T = ({ data, func, raw }) => {
   const cmd = { ...data, ...cmdTable[func][raw] }
-  console.log("~ file: handler.ts:72 ~ uartSendFnCmd ~ cmd:", cmd)
+  console.log("~ file: handler.ts:79 ~ uartSendFnCmd ~ cmd:", cmd)
   return uartSendCmd(cmd)
 }
 
 export const ping = ({ deviceId, func, cmdId = uuid() }: { deviceId: DeviceIDs_T, func: Funcs_T, cmdId?: string }) => {
   uartSendCmd({ deviceId, func, cmd: "ping", cmdId, value: "", err: "", source: "" })
+}
+
+let pingIntervalMinute = 5;
+
+export const setPingIntervalMinute = (minute: number) => pingIntervalMinute = minute;
+
+export type PingInterval_T = {
+  [id in DeviceIDs_T]: NodeJS.Timer | undefined
+}
+
+export const pingInterval: PingInterval_T = deviceIDs.reduce((pre, curr) => ({ ...pre, ...{ [curr]: undefined } }), {} as PingInterval_T)
+
+export const setInervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
+  pingInterval[deviceId] = setInterval(function () { ping({ deviceId: deviceId, func: "r" }) }, pingIntervalMinute * 60 * 1000)
+}
+
+export const clearIntervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
+  clearInterval(pingInterval[deviceId]);
+}
+
+export const setInervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
+  deviceIds.map(deviceId => setInervalPingDeviceOne(deviceId))
+}
+
+export const clearIntervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
+  deviceIds.map(deviceId => clearIntervalPingDeviceOne(deviceId))
+}
+
+export const restartInervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
+  clearIntervalPingDeviceOne(deviceId)
+  setInervalPingDeviceOne(deviceId)
+}
+
+export const restartInervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
+  deviceIds.map(deviceId => restartInervalPingDeviceOne(deviceId))
+}
+
+export const setPingIntervalMinuteAndRestartInervalPingDeviceOne = (minute: number, deviceId: DeviceIDs_T) => {
+  setPingIntervalMinute(minute)
+  restartInervalPingDeviceOne(deviceId)
+}
+
+export const setPingIntervalMinuteAndRestartInervalPingDeviceMulti = (minute: number, deviceIds: DeviceIDs_T[]) => {
+  setPingIntervalMinute(minute)
+  restartInervalPingDeviceMulti(deviceIds)
+}
+
+export const setPingIntervalSecondAndRestartInervalPingDeviceOne = (second: number, deviceId: DeviceIDs_T) => {
+  const minute = second / 60
+  setPingIntervalMinuteAndRestartInervalPingDeviceOne(minute, deviceId)
+}
+
+export const setPingIntervalSecondAndRestartInervalPingDeviceMulti = (second: number, deviceIds: DeviceIDs_T[]) => {
+  const minute = second / 60
+  setPingIntervalMinuteAndRestartInervalPingDeviceMulti(minute, deviceIds)
 }

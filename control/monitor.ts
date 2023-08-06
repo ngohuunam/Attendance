@@ -1,5 +1,5 @@
 import { pushEventDBAndWrite } from "db"
-import { authFingerprint, handlePing, handleQrCode, ping, storeEnrolledFingerprint } from "handler"
+import { authFingerprint, handlePing, handleQrCode, setPingIntervalMinuteAndRestartInervalPingDeviceOne, storeEnrolledFingerprint } from "handler"
 import { CmdObj_T } from "index"
 import { portWrite } from "serial"
 import { UartData_T, deviceIDs, uartDataProps, uuid } from "tools"
@@ -75,4 +75,4 @@ export const parseUartStr = (raw: string) => {
   return uartData
 }
 
-// const pingInterval = setInterval(function () { ping({ deviceId: "r1", func: "r" }) }, 5000)
+setPingIntervalMinuteAndRestartInervalPingDeviceOne(5, "r1")
