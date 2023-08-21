@@ -23,8 +23,41 @@ const initBot = () => {
     // of the message
 
     // const chatId = msg.chat.id;
-    const cmd = match ? match[1] : "";
-    uartSendRaw(cmd)
+    if (match) {
+      // enroll r1 21
+      let raw = match[1];
+      const splits = raw.split(" ")
+      const cmd = splits[0]
+      const device = splits[1]
+      const value = splits[2]
+
+      if (cmd === "enroll") {
+        // enroll r1 21  
+        raw = `${device},f,${cmd},000,${value}`
+      } else if (cmd === "restart") {
+        // restart r1
+        raw = `${device},r,${cmd},000`
+      } else if (cmd === "open") {
+        switch (device) {
+          case "main":
+            raw = `h0,rl,push,000,1`
+            break
+        }
+      } else if (cmd === "off") {
+        switch (device) {
+          case "main":
+            raw = `h0,rl,normal,000,3`
+            break
+        }
+      } else if (cmd === "on") {
+        switch (device) {
+          case "main":
+            raw = `h0,rl,trigger,000,3`
+            break
+        }
+      }
+      uartSendRaw(raw)
+    }
     // send back the matched "whatever" to the chat
     // bot.sendMessage(chatID, resp);
   });

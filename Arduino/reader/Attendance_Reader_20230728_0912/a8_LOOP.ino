@@ -58,13 +58,10 @@ void setup() {
   led.brightness(50);
   ledBlueBreath();
 
-  finger_setState(FINGER_STARTUP_STATE);
+//  finger_setState(FINGER_STARTUP_STATE);
   qr_setState(QR_STARTUP_STATE);
-  TimerID.RS485_INPUT =  t.setInterval(rs485_input, RS485_INPUT_INTERVAL);
-  TimerID.CONTROL_NOT_COMMUNICATE = t.setTimeout(controlNotCommunicate, CONTROL_NOT_COMMUNICATE_TIMEOUT);
-  rs485Serial.println('.');
-  rs485Serial.flush();
-  delay(20);
+  rs485_start();
+//  TimerID.CONTROL_NOT_COMMUNICATE = t.setTimeout(controlNotCommunicate, CONTROL_NOT_COMMUNICATE_TIMEOUT);
   rs485_send("r", "startup", VERSION, "");
   buzzer();
 }
@@ -115,14 +112,14 @@ void pingControl() {
 void resetNotifyServerCommunicate() {
   if (CONTROL_IS_NOT_COMMUNICATE) {
     t.cancel(TimerID.PING_CONTROL);
-    t.cancel(TimerID.CONTROL_NOT_COMMUNICATE);
-    TimerID.CONTROL_NOT_COMMUNICATE = t.setTimeout(controlNotCommunicate, CONTROL_NOT_COMMUNICATE_TIMEOUT);
     if (led_status != "bluebreath") {
       ledBlueBreath();
     }
     finger_setState(finger_state);
     qr_setState(qr_state);
   }
+  CONTROL_IS_NOT_COMMUNICATE = false;
+//  t.reset(TimerID.CONTROL_NOT_COMMUNICATE);
 }
 
 void controlNotCommunicate() {
@@ -131,7 +128,7 @@ void controlNotCommunicate() {
     finger_stopCapture();
     qr_offReading();
     ledFlashErrorFast();
-    TimerID.PING_CONTROL = t.setInterval(pingControl, 3 * 60 * 1000);
+    TimerID.PING_CONTROL = t.setInterval(pingControl, PING_CONTROL_INTERVAL);
     CONTROL_IS_NOT_COMMUNICATE = true;
   }
 }

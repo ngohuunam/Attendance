@@ -4,6 +4,7 @@
       "id": "h0",
       "type": "Host",
       "doorID": "Host 0",
+      "active": true,
       "functions": [],
       "fingerIDs": []
     },
@@ -11,6 +12,7 @@
       "id": "r1",
       "type": "Reader",
       "doorID": "d1",
+      "active": true,
       "functions": [
         "f",
         "q",
@@ -18,8 +20,124 @@
       ],
       "fingerIDs": [
         {
+          "fingerID": "1",
+          "userID": "nam"
+        },
+        {
           "fingerID": "2",
           "userID": "nam"
+        },
+        {
+          "fingerID": "3",
+          "userID": "203-tien"
+        },
+        {
+          "fingerID": "5",
+          "userID": "nam"
+        },
+        {
+          "userID": "202-tuyen",
+          "fingerID": "4"
+        },
+        {
+          "userID": "204-ngoc",
+          "fingerID": "6"
+        },
+        {
+          "userID": "204-nhu",
+          "fingerID": "7"
+        },
+        {
+          "userID": "202-khoa",
+          "fingerID": "8"
+        },
+        {
+          "userID": "105-ngon",
+          "fingerID": "9"
+        },
+        {
+          "userID": "105-loc",
+          "fingerID": "10"
+        },
+        {
+          "userID": "303-thuy",
+          "fingerID": "11"
+        },
+        {
+          "userID": "303-dong",
+          "fingerID": "12"
+        },
+        {
+          "userID": "306-hieu",
+          "fingerID": "13"
+        },
+        {
+          "userID": "305-tung",
+          "fingerID": "14"
+        },
+        {
+          "userID": "305-tam",
+          "fingerID": "15"
+        },
+        {
+          "userID": "304-huong",
+          "fingerID": "16"
+        },
+        {
+          "userID": "302-nhi",
+          "fingerID": "17"
+        },
+        {
+          "userID": "302-huy",
+          "fingerID": "18"
+        },
+        {
+          "userID": "302-quang",
+          "fingerID": "19"
+        },
+        {
+          "userID": "302-hiep",
+          "fingerID": "20"
+        },
+        {
+          "userID": "301-giang",
+          "fingerID": "21"
+        },
+        {
+          "userID": "301-son",
+          "fingerID": "22"
+        },
+        {
+          "userID": "201-sang",
+          "fingerID": "23"
+        },
+        {
+          "userID": "201-nam",
+          "fingerID": "24"
+        },
+        {
+          "userID": "203-thu",
+          "fingerID": "25"
+        },
+        {
+          "userID": "205-khiem",
+          "fingerID": "26"
+        },
+        {
+          "userID": "205-vu",
+          "fingerID": "27"
+        },
+        {
+          "userID": "206-hieu",
+          "fingerID": "28"
+        },
+        {
+          "userID": "206-truc",
+          "fingerID": "29"
+        },
+        {
+          "userID": "106-thang",
+          "fingerID": "30"
         }
       ]
     },
@@ -27,6 +145,7 @@
       "id": "r2",
       "type": "Reader",
       "doorID": "d2",
+      "active": false,
       "functions": [
         "f",
         "q",
@@ -52,6 +171,141 @@
           "userID": "nam",
           "time": "all",
           "active": true
+        },
+        {
+          "userID": "203-tien",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "202-tuyen",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "204-ngoc",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "204-nhu",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "202-khoa",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "105-ngon",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "105-loc",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "303-thuy",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "303-dong",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "306-hieu",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "305-tung",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "305-tam",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "304-huong",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "302-nhi",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "302-huy",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "302-quang",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "302-hiep",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "301-giang",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "301-son",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "201-sang",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "201-nam",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "203-thu",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "205-khiem",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "205-vu",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "206-hieu",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "206-truc",
+          "active": true,
+          "time": "all"
+        },
+        {
+          "userID": "106-thang",
+          "active": true,
+          "time": "all"
         }
       ]
     },

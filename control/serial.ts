@@ -70,7 +70,7 @@ export type PortDatas_T = string[]
 
 export const portWrite = (data: string) => {
   portDatas.push(data)
-  console.log("~ file: serial.ts:71 ~ portDatas:", portDatas)
+  console.log("~ file: serial.ts:73 ~ portDatas:", portDatas)
   pushEventDBAndWrite("raw", "rasp", `port write: ${data} - ${new Date().toLocaleTimeString("vi")}`)
   return portDatas
 }

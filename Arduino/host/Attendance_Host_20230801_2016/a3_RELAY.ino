@@ -14,7 +14,7 @@ void normalRelay(int RL_NO) {
 
 void pushRelay(int RL_NO) {
   triggerRelay(RL_NO);
-  delay(100);
+  delay(300);
   normalRelay(RL_NO);
 }
 

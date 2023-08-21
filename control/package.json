@@ -11,8 +11,8 @@
   "scripts": {
     "test": "tap \"test/**/*.test.js\"",
     "start": "fastify start -l info app.ts",
-    "dev": "nodemon --exec ts-node-esm app.ts --inspect --project ./tsconfig.json",
-    "devv": "esrun --watch=./*.ts app.ts"
+    "monitor": "esrun app.ts",
+    "dev": "nodemon --exec esrun app.ts"
   },
   "keywords": [],
   "author": "",

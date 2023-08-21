@@ -11,6 +11,15 @@ const String VERSION = "0108";
 
 const int RL_PINs[7] = {0, RL1_PIN, RL2_PIN, RL3_PIN, RL4_PIN, RL5_PIN, RL6_PIN};
 
+enum RL_NAMEs {
+  MAIN = RL1_PIN,
+  PARK = RL2_PIN,
+  CONTROL = RL3_PIN,
+  READER_1 = RL4_PIN,
+  READER_2 = RL5_PIN,
+  READER_3 = RL6_PIN
+};
+
 #include "SH1106Wire.h"
 
 #define SDA_PIN 8

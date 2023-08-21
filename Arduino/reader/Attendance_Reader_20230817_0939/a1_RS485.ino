@@ -50,7 +50,9 @@ int rs485_println(String fn, String cmd, String cmdid, String value, String err)
     str += err;
   }
   str += ".";
-  oledDrawText(2, "rs485_println: " + str);
+  if (DEBUG) {
+    oledDrawText(2, "rs485_println: " + str);
+  }
   rs485Serial.print(str);
   rs485Serial.flush();
   return 1;

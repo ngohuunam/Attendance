@@ -51,6 +51,11 @@ export type CmdTable_Fn_T = keyof CmdTable_T;
 export type UartFnCmd_T<T extends keyof CmdTable_T> = CmdTable_T[T]
 
 export const cmdTable = {
+  relay: {
+    trigger: { func: 'rl', cmd: 'trigger' },
+    normal: { func: 'rl', cmd: 'normal' },
+    push: { func: 'rl', cmd: 'push' },
+  },
   oled: {
     on: { func: 'o', cmd: 'on' },
     off: { func: 'o', cmd: 'off' },

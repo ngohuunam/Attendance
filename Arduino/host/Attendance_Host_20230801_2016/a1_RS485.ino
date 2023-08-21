@@ -67,7 +67,22 @@ int host_handleCmd(void) {
   if (Rs485_data.cmd == "ping") {
   }
   else if (Rs485_data.fn == "rl") {
-    const int RL_NO = Rs485_data.value.toInt();
+    int RL_NO = 0;
+    if (Rs485_data.value == "main"){
+      RL_NO = MAIN;
+    } else if (Rs485_data.value == "park"){
+      RL_NO = PARK;
+    } else if (Rs485_data.value == "control"){
+      RL_NO = CONTROL;
+    } else if (Rs485_data.value == "r1"){
+      RL_NO = READER_1;
+    } else if (Rs485_data.value == "r2"){
+      RL_NO = READER_2;
+    } else if (Rs485_data.value == "r3"){
+      RL_NO = READER_3;
+    } else {
+      RL_NO = Rs485_data.value.toInt();
+    }
     if (Rs485_data.cmd == "trigger") {
       triggerRelay(RL_NO);
     } else if (Rs485_data.cmd == "normal") {

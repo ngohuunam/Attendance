@@ -32,10 +32,11 @@ struct
   unsigned short CONTROL_NOT_COMMUNICATE = 0;
   unsigned short PING_CONTROL = 0;
   unsigned short BUZZER_TOGGLE_TIMEOUT = 0;
+  unsigned short WDT_RESET_INTERVAL = 0;
 } TimerID;
 
 const unsigned long CONTROL_NOT_COMMUNICATE_TIMEOUT = 15 * 60 * 1000;
-const unsigned long PING_CONTROL_INTERVAL = 3 * 60 * 1000;
+const unsigned long PING_CONTROL_INTERVAL = 0.5 * 60 * 1000;
 
 // SOFTWARE SERIAL DECLARE
 #include <SoftwareSerial.h>
@@ -81,9 +82,9 @@ RGBLed led(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, RGBLed::COMMON_ANODE);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&fingerSerial);
 
 #define FINGERPRINT_CAPTURE_INTERVAL 300
-#define FINGERPRINT_CAPTURE_SLOW_INTERVAL 600
-#define FINGERPRINT_CAPTURE_SLOWER_INTERVAL 900
-#define FINGERPRINT_ENROLL_TIMEOUT 1 * 3 * 60 * 1000
+#define FINGERPRINT_CAPTURE_SLOW_INTERVAL 500
+#define FINGERPRINT_CAPTURE_SLOWER_INTERVAL 600
+#define FINGERPRINT_ENROLL_TIMEOUT 1 * 1 * 30 * 1000
 
 const String FINGER_STARTUP_STATE = "start";
 bool FINGER_IS_BUSY = false;

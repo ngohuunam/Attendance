@@ -37,6 +37,7 @@ void finger_pauseCapture(unsigned long ms) {
 byte FINGERPRINT_PACKETRECIEVEERR_COUNTER = 0;
 byte FINGERPRINT_PACKETRECIEVEERR_RETRY_TO_NOTIFY = 0;
 byte FINGERPRINT_PACKETRECIEVEERR_RETRY_TO_STOP = 0;
+const int FINGERPRINT_PACKETRECIEVEERR_COUNTER_MAX = 3 * 60 * (1000 / FINGERPRINT_CAPTURE_INTERVAL);
 
 void finger_hanlde_FINGERPRINT_PACKETRECIEVEERR(void) {
   if (FINGERPRINT_PACKETRECIEVEERR_RETRY_TO_STOP > 3) {
@@ -45,7 +46,7 @@ void finger_hanlde_FINGERPRINT_PACKETRECIEVEERR(void) {
     return;
   }
   FINGERPRINT_PACKETRECIEVEERR_COUNTER++;
-  if (FINGERPRINT_PACKETRECIEVEERR_COUNTER > 30 * 3) {
+  if (FINGERPRINT_PACKETRECIEVEERR_COUNTER > FINGERPRINT_PACKETRECIEVEERR_COUNTER_MAX) {
     FINGERPRINT_PACKETRECIEVEERR_COUNTER = 0;
     ledError();
     finger_pauseCapture(2000);
@@ -59,7 +60,7 @@ void finger_hanlde_FINGERPRINT_PACKETRECIEVEERR(void) {
 }
 
 String finger_capture() {
-//  while (rs485Serial.available() > 0 || qrSerial.available() > 0) {}
+  //  while (rs485Serial.available() > 0 || qrSerial.available() > 0) {}
   String _status = "Capturing...";
   FINGER_IS_BUSY = true;
   uint8_t p = finger.getImage();
@@ -159,7 +160,7 @@ String finger_capture() {
 }
 
 String finger_enroll(String id) {
-//  while (rs485Serial.available() > 0 || qrSerial.available() > 0) {}
+  //  while (rs485Serial.available() > 0 || qrSerial.available() > 0) {}
   FINGER_IS_BUSY = true;
   String _status = OLED_DEBUG("Waiting for enroll...", "Chờ đọc vân tay mới...!");
   ledNotify(RGBLed::YELLOW, FINGERPRINT_ENROLL_TIMEOUT + 1000);

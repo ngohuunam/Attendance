@@ -16,28 +16,28 @@ export const handleQrCode = (data: UartData_T) => {
   console.dir(cmd, { depth: null })
 }
 
-export const storeEnrolledFingerprint = (data: UartData_T) => {
+export const storeEnrolledFingerprint = async (data: UartData_T) => {
   try {
     const device = infoDB.chain.get("devices").find({ id: data.deviceId })
     const fingerIDs = device.get("fingerIDs")
-    const userIDObj = fingerIDs.find({ fingerID: data.value }).value()
     const fingerID = data.value
+    const userIDObj = fingerIDs.find({ fingerID }).value()
+    const userID = userIDObj?.userID || uuid()
     if (userIDObj) {
       userIDObj.fingerID = fingerID
     } else {
-      fingerIDs.push({ userID: "", fingerID })
+      infoDB.chain.get("devices").find({ id: data.deviceId }).get("fingerIDs").push({ userID, fingerID }).value()
     }
     fingerIDs.value()
     const doorID = device.get("doorID").value()
     const readerID = device.get("id").value()
     const permissions = infoDB.chain.get("doors").find({ id: doorID, deviceID: readerID }).get("permissions")
-    const permission = permissions.find({ userID: userIDObj.userID }).value()
-    if (permission) {
-      permission.active = false
-    } else {
-      permissions.push({ userID: userIDObj.userID, active: false, time: "all" })
+    const permission = permissions.find({ userID }).value()
+    console.log("🚀 ~ file: handler.ts:36 ~ storeEnrolledFingerprint ~ permission:", permission)
+    if (!permission) {
+      infoDB.chain.get("doors").find({ id: doorID, deviceID: readerID }).get("permissions").push({ userID, active: false, time: "all" }).value()
+      await infoDB.write()
     }
-    permissions.value()
     uartSendCmdNotify({ data, raw: "ok" })
   } catch (e) {
     console.error(e)
@@ -66,8 +66,20 @@ export const authFingerprint = (data: UartData_T) => {
   return isAuth
 }
 
+export type UartSendHostFn_T = ({ func, cmd, cmdId, value, source }: {
+  func: Funcs_T;
+  cmd: keyof CmdTable_T["relay"];
+  cmdId?: string | undefined;
+  value: string;
+  source: string;
+}) => void
+
+export const uartSendHostFn: UartSendHostFn_T = ({ func, cmd, cmdId = uuid(), value, source }) => {
+  uartSendCmd({ deviceId: 'h0', func, cmd, cmdId, value, err: "", source })
+}
+
 export const openDoor = ({ relayID, source }: { relayID: string, source: string }) => {
-  uartSendCmd({ deviceId: "h0", func: "rl", cmd: "open", cmdId: uuid(), value: relayID, err: "", source })
+  uartSendHostFn({ func: "rl", cmd: "push", value: relayID, source })
 }
 
 export const uartSendCmdNotify = ({ data, raw }: { data: UartData_T, raw: keyof CmdTable_T["led"] }) => uartSendFnCmd<"led">({ data, func: "led", raw })
@@ -94,47 +106,47 @@ export type PingInterval_T = {
 
 export const pingInterval: PingInterval_T = deviceIDs.reduce((pre, curr) => ({ ...pre, ...{ [curr]: undefined } }), {} as PingInterval_T)
 
-export const setInervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
-  pingInterval[deviceId] = setInterval(function () { ping({ deviceId: deviceId, func: "r" }) }, pingIntervalMinute * 60 * 1000)
+export const setIntervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
+  pingInterval[deviceId] = setInterval(function () { ping({ deviceId, func: "r" }) }, pingIntervalMinute * 60 * 1000)
 }
 
 export const clearIntervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
   clearInterval(pingInterval[deviceId]);
 }
 
-export const setInervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
-  deviceIds.map(deviceId => setInervalPingDeviceOne(deviceId))
+export const setIntervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
+  deviceIds.map(deviceId => setIntervalPingDeviceOne(deviceId))
 }
 
 export const clearIntervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
   deviceIds.map(deviceId => clearIntervalPingDeviceOne(deviceId))
 }
 
-export const restartInervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
+export const restartIntervalPingDeviceOne = (deviceId: DeviceIDs_T) => {
   clearIntervalPingDeviceOne(deviceId)
-  setInervalPingDeviceOne(deviceId)
+  setIntervalPingDeviceOne(deviceId)
 }
 
-export const restartInervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
-  deviceIds.map(deviceId => restartInervalPingDeviceOne(deviceId))
+export const restartIntervalPingDeviceMulti = (deviceIds: DeviceIDs_T[]) => {
+  deviceIds.map(deviceId => restartIntervalPingDeviceOne(deviceId))
 }
 
-export const setPingIntervalMinuteAndRestartInervalPingDeviceOne = (minute: number, deviceId: DeviceIDs_T) => {
+export const setPingIntervalMinuteAndRestartIntervalPingDeviceOne = (minute: number, deviceId: DeviceIDs_T) => {
   setPingIntervalMinute(minute)
-  restartInervalPingDeviceOne(deviceId)
+  restartIntervalPingDeviceOne(deviceId)
 }
 
-export const setPingIntervalMinuteAndRestartInervalPingDeviceMulti = (minute: number, deviceIds: DeviceIDs_T[]) => {
+export const setPingIntervalMinuteAndRestartIntervalPingDeviceMulti = (minute: number, deviceIds: DeviceIDs_T[]) => {
   setPingIntervalMinute(minute)
-  restartInervalPingDeviceMulti(deviceIds)
+  restartIntervalPingDeviceMulti(deviceIds)
 }
 
-export const setPingIntervalSecondAndRestartInervalPingDeviceOne = (second: number, deviceId: DeviceIDs_T) => {
+export const setPingIntervalSecondAndRestartIntervalPingDeviceOne = (second: number, deviceId: DeviceIDs_T) => {
   const minute = second / 60
-  setPingIntervalMinuteAndRestartInervalPingDeviceOne(minute, deviceId)
+  setPingIntervalMinuteAndRestartIntervalPingDeviceOne(minute, deviceId)
 }
 
-export const setPingIntervalSecondAndRestartInervalPingDeviceMulti = (second: number, deviceIds: DeviceIDs_T[]) => {
+export const setPingIntervalSecondAndRestartIntervalPingDeviceMulti = (second: number, deviceIds: DeviceIDs_T[]) => {
   const minute = second / 60
-  setPingIntervalMinuteAndRestartInervalPingDeviceMulti(minute, deviceIds)
+  setPingIntervalMinuteAndRestartIntervalPingDeviceMulti(minute, deviceIds)
 }

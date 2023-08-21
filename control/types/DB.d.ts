@@ -11,6 +11,7 @@ export type Device = {
   id: string;
   type: string;
   doorID: string;
+  active: boolean,
   functions: string[];
   fingerIDs: FingerID[];
 }
